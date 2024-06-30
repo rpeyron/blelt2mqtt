@@ -4,6 +4,7 @@ import bleak
 import paho.mqtt.publish as publish
 import json
 import re
+import time
 
 import config
 
@@ -110,6 +111,7 @@ def notification_handler(client: bleak.BleakClient, sender, data):
         mqtt_send_state(client, result)
         if 'domoticz_idx' in client.ltDefinition:
             mqtt_send_domoticz(client, client.ltDefinition['domoticz_idx'], result)
+        client.lastmeasure = time.time()
         return
     
     if ((data[2] == 163)):
@@ -124,8 +126,9 @@ def notification_handler(client: bleak.BleakClient, sender, data):
     
 
 def disconnect_handler(client: bleak.BleakClient):
-    print("Disconnected from", client_get_name(client))
-    mqtt_remove_discovery(client)
+    if not client.waiting:
+        print("Disconnected from", client_get_name(client))
+        mqtt_remove_discovery(client)
 
 
 async def deviceConnect(deviceDefinition):
@@ -145,8 +148,18 @@ async def deviceConnect(deviceDefinition):
                 
                 await c.start_notify(notify_uuid, partial(notification_handler, c))
                 
-                while c.is_connected:
+                # Wait to get measures
+                while c.is_connected and ((c.wait > 0) and ((time.time() - c.lastmeasure) < c.wait)):
                     await asyncio.sleep(0.1)
+                
+                # If we are still connected it is a wait time, so disconnect and wait
+                if c.is_connected:
+                    print("Waiting " + c.wait + " seconds until next measure")
+                    c.waiting = True
+                    c.stop_notify(notify_uuid)
+                    c.disconnect()
+                    await asyncio.sleep(c.wait)
+                    c.waiting = False
                     
             else:
                 print("Cannot connect")
