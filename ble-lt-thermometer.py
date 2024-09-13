@@ -83,6 +83,8 @@ def client_get_name(client: bleak.BleakClient) -> str:
     name = re.sub('[^a-zA-Z0-9_]', '', name)
     return name    
 
+def toSigned16(bytes):
+    return (((bytes[0] << 8) + bytes[1]) ^ 0x8000) - 0x8000
 
 def notification_handler(client: bleak.BleakClient, sender, data):
     #print("notification_handler", sender, data)
@@ -102,7 +104,7 @@ def notification_handler(client: bleak.BleakClient, sender, data):
         
     if ((data[2] == 162) and (dataSize > 10)):
         result = {
-            "temperature": ((data[5] << 8) + data[6]) / 10.0,
+            "temperature": toSigned16(data[5:7]) / 10.0,
             "humidity": ((data[7] << 8) + data[8]) / 10.0,
             "power": data[9],
             "unit": "Celcius" if data[10] == 0 else "Farenheit"
