@@ -1,2 +1,2 @@
-bleak==0.14.3
-paho-mqtt==1.6.1
+bleak==1.0.1
+paho-mqtt==2.1.0
