@@ -27,7 +27,7 @@ def get_topic_discovery(client: bleak.BleakClient) -> str:
     return config.MQTT_DISCOVERY_PREFIX + "sensor/" + client_get_name(client) + "/config"
 
 def mqtt_send_discovery(client: bleak.BleakClient):
-    if config.MQTT_DISCOVERY:
+    if config.MQTT_DISCOVERY and config.MQTT_ENABLE:
         name = client_get_name(client)
         message =  {
             "device_class": "temperature", 
@@ -41,11 +41,14 @@ def mqtt_send_discovery(client: bleak.BleakClient):
         mqtt_send_message(get_topic_discovery(client), message)
 
 def mqtt_remove_discovery(client: bleak.BleakClient):
-    if config.MQTT_DISCOVERY:
+    if config.MQTT_DISCOVERY and config.MQTT_ENABLE:
         mqtt_send_message(get_topic_discovery(client), "")
 
 
 def mqtt_send_message(topic: str, message) -> None:
+    if not config.MQTT_ENABLE:
+        return
+
     message = json.dumps(message)
     publish.single(
                     topic,
@@ -59,9 +62,15 @@ def mqtt_send_message(topic: str, message) -> None:
 
 
 def mqtt_send_state(client: bleak.BleakClient, message) -> None:
+    if not config.MQTT_ENABLE:
+        return
+
     mqtt_send_message(get_topic_state(client), message)
 
 def mqtt_send_domoticz(client: bleak.BleakClient, domoticz_id, message) -> None:
+    if not config.MQTT_ENABLE:
+        return
+
     topic = "domoticz/in"
     message = {
         "command":"udevice", 
