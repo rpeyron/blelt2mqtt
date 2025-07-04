@@ -1,10 +1,15 @@
 import asyncio
 from functools import partial
+from typing import Optional
+from time import sleep
 import bleak
+
 import paho.mqtt.publish as publish
 import json
 import re
-import time
+
+from bleak import BleakScanner, BleakClient
+from bleak.exc import BleakDBusError
 
 import config
 
@@ -19,15 +24,17 @@ service_uuid = "0000FFE5-0000-1000-8000-00805f9b34fb"
 notify_uuid = "0000FFE8-0000-1000-8000-00805f9b34fb"
 char_uuid = "00002902-0000-1000-8000-00805f9b34fb"
 
-
-def get_topic_state(client: bleak.BleakClient) -> str:
+"""
+MQTT functions
+"""
+def get_topic_state(client: BleakClient) -> str:
     return config.MQTT_PREFIX + client_get_name(client) + "/state"
 
-def get_topic_discovery(client: bleak.BleakClient) -> str:
+def get_topic_discovery(client: BleakClient) -> str:
     return config.MQTT_DISCOVERY_PREFIX + "sensor/" + client_get_name(client) + "/config"
 
-def mqtt_send_discovery(client: bleak.BleakClient):
-    if config.MQTT_DISCOVERY:
+def mqtt_send_discovery(client: BleakClient):
+    if config.MQTT_DISCOVERY and config.MQTT_ENABLE:
         name = client_get_name(client)
         message =  {
             "device_class": "temperature", 
@@ -40,12 +47,15 @@ def mqtt_send_discovery(client: bleak.BleakClient):
         }
         mqtt_send_message(get_topic_discovery(client), message)
 
-def mqtt_remove_discovery(client: bleak.BleakClient):
-    if config.MQTT_DISCOVERY:
+def mqtt_remove_discovery(client: BleakClient):
+    if config.MQTT_DISCOVERY and config.MQTT_ENABLE:
         mqtt_send_message(get_topic_discovery(client), "")
 
 
 def mqtt_send_message(topic: str, message) -> None:
+    if not config.MQTT_ENABLE:
+        return
+
     message = json.dumps(message)
     publish.single(
                     topic,
@@ -58,10 +68,16 @@ def mqtt_send_message(topic: str, message) -> None:
     print("Sent to MQTT", topic, ": ", message)
 
 
-def mqtt_send_state(client: bleak.BleakClient, message) -> None:
+def mqtt_send_state(client: BleakClient, message) -> None:
+    if not config.MQTT_ENABLE:
+        return
+
     mqtt_send_message(get_topic_state(client), message)
 
 def mqtt_send_domoticz(client: bleak.BleakClient, domoticz_id, message) -> None:
+    if not config.MQTT_ENABLE:
+        return
+
     topic = "domoticz/in"
     message = {
         "command":"udevice", 
@@ -70,7 +86,9 @@ def mqtt_send_domoticz(client: bleak.BleakClient, domoticz_id, message) -> None:
     }
     mqtt_send_message(topic, message)
 
-
+"""
+General functions
+"""
 def client_get_name(client: bleak.BleakClient) -> str:
     try:
         if 'name' in client.ltDefinition:
@@ -86,8 +104,24 @@ def client_get_name(client: bleak.BleakClient) -> str:
 def toSigned16(bytes):
     return (((bytes[0] << 8) + bytes[1]) ^ 0x8000) - 0x8000
 
-def notification_handler(client: bleak.BleakClient, sender, data):
-    #print("notification_handler", sender, data)
+"""
+Bleak
+"""
+class Device:
+    name: Optional[str] = ""
+    mac: str = ""
+    wait: int = 30
+    domoticz_idx: Optional[int] = 0
+
+    def __init__(self, options: dict):
+        for option, value in options.items():
+            if not hasattr(self, option):
+                continue
+
+            setattr(self, option, value)
+
+def notification_handler(_: int, data: bytearray, client: BleakClient, deviceCfg: Device):
+    print(f"[{deviceCfg.name}] Received data")
     dataSize = len(data)
     
     # Check message header
@@ -111,9 +145,9 @@ def notification_handler(client: bleak.BleakClient, sender, data):
         }
         print(result)
         mqtt_send_state(client, result)
-        if 'domoticz_idx' in client.ltDefinition:
-            mqtt_send_domoticz(client, client.ltDefinition['domoticz_idx'], result)
-        client.lastmeasure = time.time()
+        if hasattr(deviceCfg, "domoticz_idx"):
+            mqtt_send_domoticz(client, deviceCfg.domoticz_idx, result)
+
         return
     
     if ((data[2] == 163)):
@@ -125,58 +159,60 @@ def notification_handler(client: bleak.BleakClient, sender, data):
         return
     
     print("Other data", ', '.join('{:02x}'.format(x) for x in data))
+
+    #client.disconnect()
     
+async def deviceConnect(deviceCfg: Device):
+    print(f'Scanning for device {deviceCfg.name}')
 
-def disconnect_handler(client: bleak.BleakClient):
-    if not client.waiting:
-        print("Disconnected from", client_get_name(client))
+    if not deviceCfg.mac:
+        print("Currently only by device address is supported")
+        return
+
+    try:
+        device = await BleakScanner.find_device_by_address(deviceCfg.mac)
+    except BleakDBusError as err:
+        print(f"[ERROR]: BleakDBusError: {err}")
+        return
+
+    if device is None:
+        print(f"Could not find device with address {deviceCfg.mac}")
+        return
+
+    print(f"[{deviceCfg.name}] Device found, attempting connection")
+
+    disconnected_event = asyncio.Event()
+
+    def disconnect_handler(client: BleakClient):
+        print("Disconnected from", deviceCfg.name)
         mqtt_remove_discovery(client)
+        client.disconnect()
+        disconnected_event.set()
 
+    async with BleakClient(device, disconnected_callback=disconnect_handler) as client:
+        print(f"[{deviceCfg.name}] Connection successful")
+        mqtt_send_discovery(client)
 
-async def deviceConnect(deviceDefinition):
-    maxRetries = -1
-    retry = 0
-    while retry != maxRetries:
-        try:
-            c = bleak.BleakClient(deviceDefinition['mac'])
-            c.ltDefinition = deviceDefinition
-            await c.connect()
-            if c.is_connected:
-                retry = 0
-                print("Connected to ", c._device_info["Name"])
-                mqtt_send_discovery(c)
-                
-                c.set_disconnected_callback(disconnect_handler)
-                
-                await c.start_notify(notify_uuid, partial(notification_handler, c))
-                
-                # Wait to get measures
-                while c.is_connected and ((c.wait > 0) and ((time.time() - c.lastmeasure) < c.wait)):
-                    await asyncio.sleep(0.1)
-                
-                # If we are still connected it is a wait time, so disconnect and wait
-                if c.is_connected:
-                    print("Waiting " + c.wait + " seconds until next measure")
-                    c.waiting = True
-                    c.stop_notify(notify_uuid)
-                    c.disconnect()
-                    await asyncio.sleep(c.wait)
-                    c.waiting = False
-                    
-            else:
-                print("Cannot connect")
-        except bleak.exc.BleakError as err:
-            retry+=1
-            print("Error connecting : ", err)
-            await asyncio.sleep(5.0)
-        finally:
-            await c.disconnect()
+        await client.start_notify(notify_uuid, partial(notification_handler, client=client, deviceCfg=deviceCfg))
+        await asyncio.sleep(deviceCfg.wait)
+        await client.stop_notify(notify_uuid)
+
+        await disconnected_event.wait()
 
     print("Too much error, stopping")
     
 
-async def main():
-    await asyncio.gather(*[deviceConnect(definition) for definition in config.DEVICES])
+async def main(devicesCfg: list):
+    lock = asyncio.Lock()
+    await asyncio.gather(*(deviceConnect(device) for device in devicesCfg))
   
+if __name__ == "__main__":
+    # Instantiate device objects from config
+    devices = []
+    for device_cfg in config.DEVICES:
+        devices.append(Device(device_cfg))
 
-asyncio.run(main())
+    try:
+        asyncio.run(main(devices))
+    except TimeoutError:
+        print("Connection failure: timeout")
