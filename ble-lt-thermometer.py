@@ -141,7 +141,7 @@ def notification_handler(_: int, data: bytearray, client: BleakClient, deviceCfg
             "temperature": toSigned16(data[5:7]) / 10.0,
             "humidity": ((data[7] << 8) + data[8]) / 10.0,
             "power": data[9],
-            "unit": "Celcius" if data[10] == 0 else "Farenheit"
+            "unit": "Celsius" if data[10] == 0 else "Fahrenheit"
         }
         print(result)
         mqtt_send_state(client, result)
@@ -199,7 +199,7 @@ async def deviceConnect(deviceCfg: Device):
 
         await disconnected_event.wait()
 
-    print("Too much error, stopping")
+    print("Too many errors, stopping")
     
 
 async def main(devicesCfg: list):
