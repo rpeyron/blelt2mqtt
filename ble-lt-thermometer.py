@@ -143,7 +143,7 @@ def notification_handler(_: int, data: bytearray, client: BleakClient, deviceCfg
         }
         print(result)
         mqtt_send_state(client, result)
-        if hasattr(deviceCfg, "domoticz_idx"):
+        if hasattr(deviceCfg, "domoticz_idx") and deviceCfg.domoticz_idx > 0:
             mqtt_send_domoticz(client, deviceCfg.domoticz_idx, result)
 
         return
