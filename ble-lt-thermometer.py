@@ -14,12 +14,12 @@ from bleak.exc import BleakDBusError
 import config
 
 # Install requirements :
-# pip3 install bleak paho-mqtt
+# pip3 install -r requirements.txt
 #
 # Edit config in config.py
 
 
-# The UUID of LT Thermometer v3 protocol
+# The UUID of LT Thermometer v3 & v4 protocol
 service_uuid = "0000FFE5-0000-1000-8000-00805f9b34fb"
 notify_uuid = "0000FFE8-0000-1000-8000-00805f9b34fb"
 char_uuid = "00002902-0000-1000-8000-00805f9b34fb"
