@@ -138,7 +138,7 @@ def notification_handler(_: int, data: bytearray, client: BleakClient, deviceCfg
         result = {
             "temperature": toSigned16(data[5:7]) / 10.0,
             "humidity": ((data[7] << 8) + data[8]) / 10.0,
-            "power": data[9],
+            "power": data[9] * 100,
             "unit": "Celsius" if data[10] == 0 else "Fahrenheit"
         }
         print(result)
