@@ -189,15 +189,23 @@ async def deviceConnect(deviceCfg: Device):
         client.disconnect()
         disconnected_event.set()
 
-    async with BleakClient(device, disconnected_callback=disconnect_handler) as client:
-        print(f"[{deviceCfg.name}] Connection successful")
-        mqtt_send_discovery(client)
+    try:
+        async with BleakClient(device, disconnected_callback=disconnect_handler) as client:
+            print(f"[{deviceCfg.name}] Connection successful")
+            mqtt_send_discovery(client)
 
-        await client.start_notify(notify_uuid, partial(notification_handler, client=client, deviceCfg=deviceCfg))
-        await asyncio.sleep(deviceCfg.wait)
-        await client.stop_notify(notify_uuid)
+            await client.start_notify(notify_uuid, partial(notification_handler, client=client, deviceCfg=deviceCfg))
+            await asyncio.sleep(deviceCfg.wait)
+            await client.stop_notify(notify_uuid)
 
-        await disconnected_event.wait()
+            try:
+                await disconnected_event.wait()
+            except asyncio.exceptions.CancelledError:
+                print(f"[{deviceCfg.name}] Cancelling connection, disconnecting")
+                await client.disconnect()
+    except AssertionError:
+        return
+
 
     print("Too many errors, stopping")
     
@@ -216,3 +224,5 @@ if __name__ == "__main__":
         asyncio.run(main(devices))
     except TimeoutError:
         print("Connection failure: timeout")
+    except KeyboardInterrupt:
+        print("Exit by user.")
