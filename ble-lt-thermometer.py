@@ -1,25 +1,23 @@
 import asyncio
 from functools import partial
 from typing import Optional
-from time import sleep
-import bleak
-
-import paho.mqtt.publish as publish
 import json
 import re
 
+import bleak
 from bleak import BleakScanner, BleakClient
 from bleak.exc import BleakDBusError
+import paho.mqtt.publish as publish
 
 import config
 
 # Install requirements :
-# pip3 install bleak paho-mqtt
+# pip3 install -r requirements.txt
 #
 # Edit config in config.py
 
 
-# The UUID of LT Thermometer v3 protocol
+# The UUID of LT Thermometer v3 & v4 protocol
 service_uuid = "0000FFE5-0000-1000-8000-00805f9b34fb"
 notify_uuid = "0000FFE8-0000-1000-8000-00805f9b34fb"
 char_uuid = "00002902-0000-1000-8000-00805f9b34fb"
@@ -140,12 +138,12 @@ def notification_handler(_: int, data: bytearray, client: BleakClient, deviceCfg
         result = {
             "temperature": toSigned16(data[5:7]) / 10.0,
             "humidity": ((data[7] << 8) + data[8]) / 10.0,
-            "power": data[9],
-            "unit": "Celcius" if data[10] == 0 else "Farenheit"
+            "power": data[9] * 100,
+            "unit": "Celsius" if data[10] == 0 else "Fahrenheit"
         }
         print(result)
         mqtt_send_state(client, result)
-        if hasattr(deviceCfg, "domoticz_idx"):
+        if hasattr(deviceCfg, "domoticz_idx") and deviceCfg.domoticz_idx > 0:
             mqtt_send_domoticz(client, deviceCfg.domoticz_idx, result)
 
         return
@@ -189,17 +187,25 @@ async def deviceConnect(deviceCfg: Device):
         client.disconnect()
         disconnected_event.set()
 
-    async with BleakClient(device, disconnected_callback=disconnect_handler) as client:
-        print(f"[{deviceCfg.name}] Connection successful")
-        mqtt_send_discovery(client)
+    try:
+        async with BleakClient(device, disconnected_callback=disconnect_handler) as client:
+            print(f"[{deviceCfg.name}] Connection successful")
+            mqtt_send_discovery(client)
 
-        await client.start_notify(notify_uuid, partial(notification_handler, client=client, deviceCfg=deviceCfg))
-        await asyncio.sleep(deviceCfg.wait)
-        await client.stop_notify(notify_uuid)
+            await client.start_notify(notify_uuid, partial(notification_handler, client=client, deviceCfg=deviceCfg))
+            await asyncio.sleep(deviceCfg.wait)
+            await client.stop_notify(notify_uuid)
 
-        await disconnected_event.wait()
+            try:
+                await disconnected_event.wait()
+            except asyncio.exceptions.CancelledError:
+                print(f"[{deviceCfg.name}] Cancelling connection, disconnecting")
+                await client.disconnect()
+    except AssertionError:
+        return
 
-    print("Too much error, stopping")
+
+    print("Too many errors, stopping")
     
 
 async def main(devicesCfg: list):
@@ -216,3 +222,5 @@ if __name__ == "__main__":
         asyncio.run(main(devices))
     except TimeoutError:
         print("Connection failure: timeout")
+    except KeyboardInterrupt:
+        print("Exit by user.")
