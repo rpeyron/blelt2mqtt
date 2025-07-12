@@ -27,6 +27,7 @@ class Device:
     Device class.
     Acts as object holding device configuration
     """
+    name: str = ""
     custom_name: Optional[str] = ""
     mac: str = ""
     wait: int = 30
@@ -181,6 +182,9 @@ async def deviceConnect(deviceCfg: Device):
         return
 
     print(f"[{deviceCfg.custom_name}] Device found, attempting connection")
+
+    # Set device name to blu name
+    deviceCfg.name = ble_device.name
 
     disconnected_event = asyncio.Event()
 
