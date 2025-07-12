@@ -27,7 +27,7 @@ class Device:
     Device class.
     Acts as object holding device configuration
     """
-    name: Optional[str] = ""
+    custom_name: Optional[str] = ""
     mac: str = ""
     wait: int = 30
     domoticz_idx: Optional[int] = 0
@@ -53,7 +53,7 @@ def mqtt_send_discovery(client: BleakClient, deviceCfg: Device):
         name = client_get_name(client, deviceCfg)
         message =  {
             "device_class": "temperature", 
-            "name": name , 
+            "name": name ,
             "state_topic": get_topic_state(client, deviceCfg),
             "value_template": "{{ value_json.temperature}}",
             "json_attributes_topic": get_topic_state(client, deviceCfg),
@@ -106,8 +106,8 @@ General functions
 """
 def client_get_name(client: bleak.BleakClient, deviceCfg: Device) -> str:
     name = client.address
-    if deviceCfg.name:
-        name = deviceCfg.name
+    if deviceCfg.custom_name:
+        name = deviceCfg.custom_name
     elif client._device_info["Name"]:
         name = client._device_info["Name"]
 
@@ -122,7 +122,7 @@ def toSigned16(bytes):
 Bleak
 """
 def notification_handler(_: int, data: bytearray, client: BleakClient, deviceCfg: Device):
-    print(f"[{deviceCfg.name}] Received data")
+    print(f"[{deviceCfg.custom_name}] Received data")
     dataSize = len(data)
     
     # Check message header
@@ -164,7 +164,7 @@ def notification_handler(_: int, data: bytearray, client: BleakClient, deviceCfg
     #client.disconnect()
     
 async def deviceConnect(deviceCfg: Device):
-    print(f'Scanning for device {deviceCfg.name}')
+    print(f'Scanning for device {deviceCfg.custom_name}')
 
     if not deviceCfg.mac:
         print("Currently only by device address is supported")
@@ -180,19 +180,19 @@ async def deviceConnect(deviceCfg: Device):
         print(f"Could not find device with address {deviceCfg.mac}")
         return
 
-    print(f"[{deviceCfg.name}] Device found, attempting connection")
+    print(f"[{deviceCfg.custom_name}] Device found, attempting connection")
 
     disconnected_event = asyncio.Event()
 
     def disconnect_handler(client: BleakClient):
-        print("Disconnected from", deviceCfg.name)
+        print("Disconnected from", deviceCfg.custom_name)
         mqtt_remove_discovery(client, deviceCfg)
         client.disconnect()
         disconnected_event.set()
 
     try:
         async with BleakClient(device, disconnected_callback=disconnect_handler) as client:
-            print(f"[{deviceCfg.name}] Connection successful")
+            print(f"[{deviceCfg.custom_name}] Connection successful")
             mqtt_send_discovery(client, deviceCfg)
 
             await client.start_notify(notify_uuid, partial(notification_handler, client=client, deviceCfg=deviceCfg))
@@ -202,7 +202,7 @@ async def deviceConnect(deviceCfg: Device):
             try:
                 await disconnected_event.wait()
             except asyncio.exceptions.CancelledError:
-                print(f"[{deviceCfg.name}] Cancelling connection, disconnecting")
+                print(f"[{deviceCfg.custom_name}] Cancelling connection, disconnecting")
                 await client.disconnect()
     except AssertionError:
         return

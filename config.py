@@ -1,14 +1,14 @@
 # Device Settings
 # {
 #   'mac'         : (required) MAC Address of the bluetooth LT Thermometer
-#   'name'        : (optional) to override the name provided by bluetooth
+#   'custom_name' : (optional) to override the custom_name provided by bluetooth
 #   'domoticz_idx': (optional) id of the virtual sensor to be updated through domoticz   
 #   'wait'        : (optional) time in seconds to wait between two measures (disconnect/reconnect)
 # }
 
 DEVICES = [ 
-   {'mac': "C8:33:DE:43:2C:00", 'name': "LT Bureau", 'domoticz_idx': 96, 'wait': 30},
-   {'mac': "C8:33:DE:43:2C:01", 'name': "LT Bureau (14)", 'domoticz_idx': 39, 'wait': 30},
+   {'mac': "C8:33:DE:43:2C:00", 'custom_name': "LT Bureau", 'domoticz_idx': 96, 'wait': 30},
+   {'mac': "C8:33:DE:43:2C:01", 'custom_name': "LT Bureau (14)", 'domoticz_idx': 39, 'wait': 30},
 ]
 
 
