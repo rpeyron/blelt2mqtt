@@ -27,8 +27,9 @@ class Device:
     Device class.
     Acts as object holding device configuration
     """
-    name: str = ""
+    _name: str = ""
     custom_name: Optional[str] = ""
+    _safe_name: str = ""
     mac: str = ""
     wait: int = 30
     domoticz_idx: Optional[int] = 0
@@ -40,32 +41,54 @@ class Device:
 
             setattr(self, option, value)
 
+    @property
+    def name(self) -> str:
+        if self.custom_name:
+            return self.custom_name
+        elif self._name:
+            return self._name
+
+        return self.mac
+
+    @name.setter
+    def name(self, name: str):
+        self._name = name
+
+    @property
+    def safe_name(self) -> str:
+        if not self._safe_name:
+            self._safe_name = self._name
+        return self._safe_name
+
+    @safe_name.setter
+    def safe_name(self, name: str):
+        self._safe_name = re.sub('[^a-zA-Z0-9_]', '', name)
+
 """
 MQTT functions
 """
-def get_topic_state(client: BleakClient, device: Device) -> str:
-    return config.MQTT_PREFIX + client_get_name(client, device) + "/state"
+def get_topic_state(device: Device) -> str:
+    return config.MQTT_PREFIX + device.safe_name + "/state"
 
-def get_topic_discovery(client: BleakClient, device: Device) -> str:
-    return config.MQTT_DISCOVERY_PREFIX + "sensor/" + client_get_name(client, device) + "/config"
+def get_topic_discovery(device: Device) -> str:
+    return config.MQTT_DISCOVERY_PREFIX + "sensor/" + device.safe_name + "/config"
 
-def mqtt_send_discovery(client: BleakClient, device: Device):
+def mqtt_send_discovery(device: Device):
     if config.MQTT_DISCOVERY and config.MQTT_ENABLE:
-        name = client_get_name(client, device)
         message =  {
             "device_class": "temperature", 
-            "name": name ,
-            "state_topic": get_topic_state(client, device),
+            "name": device.name ,
+            "state_topic": get_topic_state(device),
             "value_template": "{{ value_json.temperature}}",
-            "json_attributes_topic": get_topic_state(client, device),
+            "json_attributes_topic": get_topic_state(device),
             "unit_of_measurement": "°C", 
             "icon": "mdi:thermometer"
         }
-        mqtt_send_message(get_topic_discovery(client, device), message)
+        mqtt_send_message(get_topic_discovery(device), message)
 
-def mqtt_remove_discovery(client: BleakClient, device: Device):
+def mqtt_remove_discovery(device: Device):
     if config.MQTT_DISCOVERY and config.MQTT_ENABLE:
-        mqtt_send_message(get_topic_discovery(client, device), "")
+        mqtt_send_message(get_topic_discovery(device), "")
 
 
 def mqtt_send_message(topic: str, message) -> None:
@@ -84,13 +107,13 @@ def mqtt_send_message(topic: str, message) -> None:
     print("Sent to MQTT", topic, ": ", message)
 
 
-def mqtt_send_state(client: BleakClient, message, device: Device) -> None:
+def mqtt_send_state(message, device: Device) -> None:
     if not config.MQTT_ENABLE:
         return
 
-    mqtt_send_message(get_topic_state(client, device), message)
+    mqtt_send_message(get_topic_state(device), message)
 
-def mqtt_send_domoticz(client: bleak.BleakClient, domoticz_id, message) -> None:
+def mqtt_send_domoticz(domoticz_id, message) -> None:
     if not config.MQTT_ENABLE:
         return
 
@@ -105,24 +128,13 @@ def mqtt_send_domoticz(client: bleak.BleakClient, domoticz_id, message) -> None:
 """
 General functions
 """
-def client_get_name(client: bleak.BleakClient, device: Device) -> str:
-    name = client.address
-    if device.custom_name:
-        name = device.custom_name
-    elif client._device_info["Name"]:
-        name = client._device_info["Name"]
-
-    # Sanitize
-    name = re.sub('[^a-zA-Z0-9_]', '', name)
-    return name    
-
 def toSigned16(bytes):
     return (((bytes[0] << 8) + bytes[1]) ^ 0x8000) - 0x8000
 
 """
 Bleak
 """
-def notification_handler(_: int, data: bytearray, client: BleakClient, device: Device):
+def notification_handler(_: int, data: bytearray, device: Device):
     print(f"[{device.custom_name}] Received data")
     dataSize = len(data)
     
@@ -146,9 +158,9 @@ def notification_handler(_: int, data: bytearray, client: BleakClient, device: D
             "unit": "Celsius" if data[10] == 0 else "Fahrenheit"
         }
         print(result)
-        mqtt_send_state(client, result, device)
+        mqtt_send_state(result, device)
         if hasattr(device, "domoticz_idx") and device.domoticz_idx > 0:
-            mqtt_send_domoticz(client, device.domoticz_idx, result)
+            mqtt_send_domoticz(device.domoticz_idx, result)
 
         return
     
@@ -190,16 +202,16 @@ async def deviceConnect(device: Device):
 
     def disconnect_handler(client: BleakClient):
         print("Disconnected from", device.custom_name)
-        mqtt_remove_discovery(client, device)
+        mqtt_remove_discovery(device)
         client.disconnect()
         disconnected_event.set()
 
     try:
         async with BleakClient(ble_device, disconnected_callback=disconnect_handler) as client:
             print(f"[{device.custom_name}] Connection successful")
-            mqtt_send_discovery(client, device)
+            mqtt_send_discovery(device)
 
-            await client.start_notify(notify_uuid, partial(notification_handler, client=client, device=device))
+            await client.start_notify(notify_uuid, partial(notification_handler, device=device))
             await asyncio.sleep(device.wait)
             await client.stop_notify(notify_uuid)
 
