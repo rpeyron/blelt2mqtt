@@ -32,6 +32,7 @@ class Device:
     _safe_name: str = ""
     mac: str = ""
     wait: int = 30
+    _uniq_id = ""
     domoticz_idx: Optional[int] = 0
 
     def __init__(self, options: dict):
@@ -40,6 +41,8 @@ class Device:
                 continue
 
             setattr(self, option, value)
+
+        self.uniq_id = self.mac
 
     @property
     def name(self) -> str:
@@ -64,6 +67,14 @@ class Device:
     def safe_name(self, name: str):
         self._safe_name = re.sub('[^a-zA-Z0-9_]', '', name)
 
+    @property
+    def uniq_id(self) -> str:
+        return self._uniq_id
+
+    @uniq_id.setter
+    def uniq_id(self, address: str):
+        self._uniq_id = config.MQTT_PREFIX[:-1] + address.replace(":", "")
+
 """
 MQTT functions
 """
@@ -78,6 +89,7 @@ def mqtt_send_discovery(device: Device):
         message =  {
             "device_class": "temperature", 
             "name": device.name ,
+            "uniq_id": device.uniq_id,
             "state_topic": get_topic_state(device),
             "value_template": "{{ value_json.temperature}}",
             "json_attributes_topic": get_topic_state(device),
