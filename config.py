@@ -14,7 +14,7 @@ DEVICES = [
 
 # MQTT Settings
 
-MQTT_ENABLE=False                       # Enable MQTT. Publish MQTT messages or just print output. Default: True
+MQTT_ENABLE=True                        # Enable MQTT. Publish MQTT messages or just print output. Default: True
 MQTT_HOST="127.0.0.1"                   # MQTT Server (defaults to 127.0.0.1)
 MQTT_PORT=1883                          # Defaults to 1883
 MQTT_USERNAME="username"                # Username for MQTT server ('username' if not required)
