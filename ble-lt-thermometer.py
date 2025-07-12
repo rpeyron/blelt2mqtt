@@ -171,12 +171,12 @@ async def deviceConnect(deviceCfg: Device):
         return
 
     try:
-        device = await BleakScanner.find_device_by_address(deviceCfg.mac)
+        ble_device = await BleakScanner.find_device_by_address(deviceCfg.mac)
     except BleakDBusError as err:
         print(f"[ERROR]: BleakDBusError: {err}")
         return
 
-    if device is None:
+    if ble_device is None:
         print(f"Could not find device with address {deviceCfg.mac}")
         return
 
@@ -191,7 +191,7 @@ async def deviceConnect(deviceCfg: Device):
         disconnected_event.set()
 
     try:
-        async with BleakClient(device, disconnected_callback=disconnect_handler) as client:
+        async with BleakClient(ble_device, disconnected_callback=disconnect_handler) as client:
             print(f"[{deviceCfg.custom_name}] Connection successful")
             mqtt_send_discovery(client, deviceCfg)
 
