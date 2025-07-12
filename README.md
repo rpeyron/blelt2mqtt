@@ -40,6 +40,8 @@ crontab -e
 
 This should not require extra configuration for use with MQTT auto-discovery.
 
+### Domoticz
+
 If you want to have a domoticz sensor with temperature and humidity, you need to follow these steps:
 1. Configure a virtual sensor Temperature+Humidity through the Dummy hardware in Hardware menu
 2. Read the idx of the created device in the Devices menu
@@ -47,6 +49,41 @@ If you want to have a domoticz sensor with temperature and humidity, you need to
 
 You should now see the sensor (native sensor on the left, auto-discovered on the right) :
 ![Example of sensor in domoticz](./docs/domoticz.png)
+
+### Home Assistant
+
+By default, the auto-discovered sensor is a temperature sensor with all data besides temperature being attributes.  
+
+#### Extracting attributes as entities
+
+In case you want to extract data from the attributes as separate entities (and possibly manipulate the extracted data)
+follow the steps below. This gives an example of manipulating the temperature entity and creating a separate humidity 
+entity.
+
+1. Open _configuration.yaml_
+2. Add the following. Replace CONFIG.DEVICES.NAME with the name you've setup in your blelt2mqtt's config.py  
+```
+# blelt2mqtt sensor example
+mqtt:
+  - sensor:
+    - name: "My Area - Temperature"
+      state_topic: "lt_temp/CONFIG.DEVICES.NAME/state"
+      suggested_display_precision: 1
+      unit_of_measurement: "°C"
+      value_template: "{{ value_json.temperature }}"
+    - name: "My Area - Humidity"
+      state_topic: "lt_temp/CONFIG.DEVICES.NAME/state"
+      unit_of_measurement: "%"
+      value_template: "{{ value_json.humidity }}"
+```
+3. Check the configuration and reload Home Assistant.
+
+#### Using sensor cards
+1. Edit dashboard
+2. Add to dashboard > by card
+3. Choose **Sensor**
+4. Configure the sensor data you want to display as desired.
+
 
 
 ## Protocol
@@ -59,7 +96,8 @@ The reverse-engineered protocol is described in [protocol.md](./protocol.md) and
 * [LT-Thermometer v3](https://d.ihunuo.com/app/dqwu) Android or iOS application
 * Bluetooth UUID [Nordic open database](https://github.com/NordicSemiconductor/bluetooth-numbers-database) and [official 16-bits list](https://btprodspecificationrefs.blob.core.windows.net/assigned-values/16-bit%20UUID%20Numbers%20Document.pdf) <i>(spoiler: the used UUID aren't in there...)</i>
 * [BLE Tutorial for Arduino](https://www.sgwireless.com/uploads/ueditor/upload/file/20200315/AN-101%20Enabling%20BLE%20function%20on%20Arduino%20Platform%20with%20SGW1010-EVK.pdf)
-* Home Assistant [auto-discovery protocol](https://www.home-assistant.io/docs/mqtt/discovery/) and [fields definition for sensors](https://www.home-assistant.io/integrations/sensor.mqtt/)
+* Home Assistant [auto-discovery protocol](https://www.home-assistant.io/docs/mqtt/discovery/) and [fields definition for sensors](https://www.home-assistant.io/integrations/sensor.mqtt/), specifically 
+[Temperature and Humidity Sensors](https://www.home-assistant.io/integrations/sensor.mqtt/#temperature-and-humidity-sensors)
 * Domoticz auto-discovery support with [native client](https://www.domoticz.com/wiki/MQTT#Add_hardware_.22MQTT_Auto_Discovery_Client_Gateway.22) or [plugin](https://github.com/emontnemery/domoticz_mqtt_discovery)
 * Domoticz MQTT [sensor messages format](https://piandmore.wordpress.com/2019/02/04/mqtt-out-for-domoticz/)
 
