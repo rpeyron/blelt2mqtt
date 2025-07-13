@@ -61,18 +61,18 @@ follow the steps below. This gives an example of manipulating the temperature en
 entity.
 
 1. Open _configuration.yaml_
-2. Add the following. Replace CONFIG.DEVICES.NAME with the name you've setup in your blelt2mqtt's config.py  
+2. Add the following. Replace <DEVICE.NAME> with your device's bluetooth name.  
 ```
 # blelt2mqtt sensor example
 mqtt:
   - sensor:
     - name: "My Area - Temperature"
-      state_topic: "lt_temp/CONFIG.DEVICES.NAME/state"
+      state_topic: "lt_temp/<DEVICE.NAME>>/state"
       suggested_display_precision: 1
       unit_of_measurement: "°C"
       value_template: "{{ value_json.temperature }}"
     - name: "My Area - Humidity"
-      state_topic: "lt_temp/CONFIG.DEVICES.NAME/state"
+      state_topic: "lt_temp/<DEVICE.NAME>/state"
       unit_of_measurement: "%"
       value_template: "{{ value_json.humidity }}"
 ```
