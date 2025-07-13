@@ -253,5 +253,7 @@ if __name__ == "__main__":
         asyncio.run(main(devices))
     except TimeoutError:
         print("Connection failure: timeout")
+    except OSError:
+        print("Bluetooth interface not ready for use. Did you enable the if?")
     except KeyboardInterrupt:
         print("Exit by user.")
