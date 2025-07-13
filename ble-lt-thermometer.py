@@ -147,7 +147,7 @@ def toSigned16(bytes):
 Bleak
 """
 def notification_handler(_: int, data: bytearray, device: Device):
-    print(f"[{device.custom_name}] Received data")
+    print(f"[{device.name}] Received data")
     dataSize = len(data)
     
     # Check message header
@@ -189,7 +189,7 @@ def notification_handler(_: int, data: bytearray, device: Device):
     #client.disconnect()
     
 async def deviceConnect(device: Device):
-    print(f'Scanning for device {device.custom_name}')
+    print(f'Scanning for device {device.name}')
 
     if not device.mac:
         print("Currently only by device address is supported")
@@ -205,7 +205,7 @@ async def deviceConnect(device: Device):
         print(f"Could not find device with address {device.mac}")
         return
 
-    print(f"[{device.custom_name}] Device found, attempting connection")
+    print(f"[{device.name}] Device found, attempting connection")
 
     # Set device name to blu name
     device.name = ble_device.name
@@ -213,14 +213,14 @@ async def deviceConnect(device: Device):
     disconnected_event = asyncio.Event()
 
     def disconnect_handler(client: BleakClient):
-        print("Disconnected from", device.custom_name)
+        print("Disconnected from", device.name)
         mqtt_remove_discovery(device)
         client.disconnect()
         disconnected_event.set()
 
     try:
         async with BleakClient(ble_device, disconnected_callback=disconnect_handler) as client:
-            print(f"[{device.custom_name}] Connection successful")
+            print(f"[{device.name}] Connection successful")
             mqtt_send_discovery(device)
 
             await client.start_notify(notify_uuid, partial(notification_handler, device=device))
@@ -230,7 +230,7 @@ async def deviceConnect(device: Device):
             try:
                 await disconnected_event.wait()
             except asyncio.exceptions.CancelledError:
-                print(f"[{device.custom_name}] Cancelling connection, disconnecting")
+                print(f"[{device.name}] Cancelling connection, disconnecting")
                 await client.disconnect()
     except AssertionError:
         return
