@@ -21,6 +21,13 @@ service_uuid = "0000FFE5-0000-1000-8000-00805f9b34fb"
 notify_uuid = "0000FFE8-0000-1000-8000-00805f9b34fb"
 char_uuid = "00002902-0000-1000-8000-00805f9b34fb"
 
+# Dict of components the device has/reports with its abbreviation
+device_components = {
+    'temperature': 't',
+    'humidity': 'h',
+    'battery': 'b'
+}
+
 class Device:
     """
     Device class.
@@ -121,15 +128,14 @@ def mqtt_send_discovery(device: Device):
             "state_topic": get_topic_state(device),
         }
 
-        mqtt_send_message(get_topic_discovery(device, "t"), message)
-        mqtt_send_message(get_topic_discovery(device, "h"), message)
-        mqtt_send_message(get_topic_discovery(device, "b"), message)
+        # Publish for every available component
+        for comp in device_components.values():
+            mqtt_send_message(get_topic_discovery(device, comp), message)
 
 def mqtt_remove_discovery(device: Device):
     if config.MQTT_DISCOVERY and config.MQTT_ENABLE:
-        mqtt_send_message(get_topic_discovery(device, "t"), "")
-        mqtt_send_message(get_topic_discovery(device, "h"), "")
-        mqtt_send_message(get_topic_discovery(device, "b"), "")
+        for comp in device_components.values():
+            mqtt_send_message(get_topic_discovery(device, comp), "")
 
 
 def mqtt_send_message(topic: str, message) -> None:
