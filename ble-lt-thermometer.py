@@ -119,7 +119,6 @@ def mqtt_send_discovery(device: Device):
                 },
             },
             "state_topic": get_topic_state(device),
-            "json_attributes_topic": get_topic_state(device),
         }
 
         mqtt_send_message(get_topic_discovery(device, "t"), message)
