@@ -20,6 +20,24 @@ Prerequisites:
 * Python3 with pip3
 
 Installation steps:
+0. Optional: Create a virtual environment (venv)  
+
+Debian users will need to install `python-venv` first if not installed! Python will warn you about that.
+
+First, create a virtual environment:
+
+```bash
+# Create the venv
+python3 -m venv .venv
+# Activate the venv
+source .venv/bin/activate
+```
+
+To be sure, let's first upgrade PIP in our fresh venv:
+```bash
+python3 -m pip install --upgrade pip
+```
+
 1. Install needed Python modules (bleak, paho-mqtt)
 
 ```
