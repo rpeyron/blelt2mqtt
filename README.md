@@ -123,6 +123,10 @@ The reverse-engineered protocol is described in [protocol.md](./protocol.md) and
 
 ## License & Credits
 
-GPL 
+[GPL-3.0 
+](LICENSE)
 
-2022 - Remi Peyronnet
+2022 - Remi Peyronnet  
+
+Contributions:  
+Maghiel Dijksman
