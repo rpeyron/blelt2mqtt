@@ -109,19 +109,27 @@ def mqtt_send_discovery(device: Device):
                     "unit_of_measurement": "%",
                     "value_template": "{{ value_json.humidity}}",
                     "unique_id": device.safe_name + "_h",
-                }
+                },
+                f"{device.safe_name.lower()}_battery1": {
+                    "platform": "sensor",
+                    "device_class": "battery",
+                    "unit_of_measurement": "%",
+                    "value_template": "{{ value_json.battery}}",
+                    "unique_id": device.safe_name + "_b",
+                },
             },
             "state_topic": get_topic_state(device),
-            "json_attributes_topic": get_topic_state(device),
         }
 
         mqtt_send_message(get_topic_discovery(device, "t"), message)
         mqtt_send_message(get_topic_discovery(device, "h"), message)
+        mqtt_send_message(get_topic_discovery(device, "b"), message)
 
 def mqtt_remove_discovery(device: Device):
     if config.MQTT_DISCOVERY and config.MQTT_ENABLE:
         mqtt_send_message(get_topic_discovery(device, "t"), "")
         mqtt_send_message(get_topic_discovery(device, "h"), "")
+        mqtt_send_message(get_topic_discovery(device, "b"), "")
 
 
 def mqtt_send_message(topic: str, message) -> None:
@@ -188,6 +196,7 @@ def notification_handler(_: int, data: bytearray, device: Device):
             "temperature": toSigned16(data[5:7]) / 10.0,
             "humidity": ((data[7] << 8) + data[8]) / 10.0,
             "power": data[9] * 100,
+            "battery": data[9] * 100,
             "unit": "Celsius" if data[10] == 0 else "Fahrenheit"
         }
         print(result)
