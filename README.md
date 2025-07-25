@@ -15,7 +15,7 @@ These devices are supported by an android application named "qaqa" which is avai
 ## Install
 
 Prerequisites:
-* Linux, Windows or MacOS (only tested on Linux / Raspberry)
+* Linux, Windows or MacOS (only tested on Linux / Raspberry Pi and Windows 11)
 * Bluetooth LE compatible device (with installed stack)
 * Python3 with pip3
 
