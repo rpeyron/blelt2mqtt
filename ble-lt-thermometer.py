@@ -4,7 +4,6 @@ from typing import Optional
 import json
 import re
 
-import bleak
 from bleak import BleakScanner, BleakClient
 from bleak.exc import BleakDBusError
 import paho.mqtt.publish as publish
@@ -21,6 +20,13 @@ import config
 service_uuid = "0000FFE5-0000-1000-8000-00805f9b34fb"
 notify_uuid = "0000FFE8-0000-1000-8000-00805f9b34fb"
 char_uuid = "00002902-0000-1000-8000-00805f9b34fb"
+
+# Dict of components the device has/reports with its abbreviation
+device_components = {
+    'temperature': 't',
+    'humidity': 'h',
+    'battery': 'b'
+}
 
 class Device:
     """
@@ -81,26 +87,55 @@ MQTT functions
 def get_topic_state(device: Device) -> str:
     return config.MQTT_PREFIX + device.safe_name + "/state"
 
-def get_topic_discovery(device: Device) -> str:
-    return config.MQTT_DISCOVERY_PREFIX + "sensor/" + device.safe_name + "/config"
+def get_topic_discovery(device: Device, suffix: str = "t") -> str:
+    return config.MQTT_DISCOVERY_PREFIX + f"device/{device.safe_name}_{suffix}/config"
 
 def mqtt_send_discovery(device: Device):
     if config.MQTT_DISCOVERY and config.MQTT_ENABLE:
-        message =  {
-            "device_class": "temperature", 
-            "name": device.name ,
-            "uniq_id": device.uniq_id,
+        message = {
+            "device": {
+                "ids": device.safe_name,
+                "name": device.name,
+            },
+            "origin": {
+                "name": "blelt2mqtt",
+                "sw_version": "0.1.0.0",
+                "support_url": "https://github.com/rpeyron/blelt2mqtt"
+            },
+            "components": {
+                f"{device.safe_name.lower()}_temperature1": {
+                    "platform": "sensor",
+                    "device_class": "temperature",
+                    "unit_of_measurement": "°C",
+                    "value_template": "{{ value_json.temperature}}",
+                    "unique_id": device.safe_name + "_t",
+                },
+                f"{device.safe_name.lower()}_humidity1": {
+                    "platform": "sensor",
+                    "device_class": "humidity",
+                    "unit_of_measurement": "%",
+                    "value_template": "{{ value_json.humidity}}",
+                    "unique_id": device.safe_name + "_h",
+                },
+                f"{device.safe_name.lower()}_battery1": {
+                    "platform": "sensor",
+                    "device_class": "battery",
+                    "unit_of_measurement": "%",
+                    "value_template": "{{ value_json.battery}}",
+                    "unique_id": device.safe_name + "_b",
+                },
+            },
             "state_topic": get_topic_state(device),
-            "value_template": "{{ value_json.temperature}}",
-            "json_attributes_topic": get_topic_state(device),
-            "unit_of_measurement": "°C", 
-            "icon": "mdi:thermometer"
         }
-        mqtt_send_message(get_topic_discovery(device), message)
+
+        # Publish for every available component
+        for comp in device_components.values():
+            mqtt_send_message(get_topic_discovery(device, comp), message)
 
 def mqtt_remove_discovery(device: Device):
     if config.MQTT_DISCOVERY and config.MQTT_ENABLE:
-        mqtt_send_message(get_topic_discovery(device), "")
+        for comp in device_components.values():
+            mqtt_send_message(get_topic_discovery(device, comp), "")
 
 
 def mqtt_send_message(topic: str, message) -> None:
@@ -167,6 +202,7 @@ def notification_handler(_: int, data: bytearray, device: Device):
             "temperature": toSigned16(data[5:7]) / 10.0,
             "humidity": ((data[7] << 8) + data[8]) / 10.0,
             "power": data[9] * 100,
+            "battery": data[9] * 100,
             "unit": "Celsius" if data[10] == 0 else "Fahrenheit"
         }
         print(result)

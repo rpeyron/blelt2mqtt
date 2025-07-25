@@ -52,7 +52,8 @@ You should now see the sensor (native sensor on the left, auto-discovered on the
 
 ### Home Assistant
 
-By default, the auto-discovered sensor is a temperature sensor with all data besides temperature being attributes.  
+By default, the auto-discovered device is a MQTT device with the components **temperature**, **humidity** 
+and **battery**.  
 
 #### Extracting attributes as entities
 
