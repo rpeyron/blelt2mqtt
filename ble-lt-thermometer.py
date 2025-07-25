@@ -4,7 +4,6 @@ from typing import Optional
 import json
 import re
 
-import bleak
 from bleak import BleakScanner, BleakClient
 from bleak.exc import BleakDBusError
 import paho.mqtt.publish as publish
