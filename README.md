@@ -26,7 +26,7 @@ Installation steps:
 pip3 install -r requirements.txt
 ```
 
-2. Configure your sensor anq MQTT server in the configuration file
+2. Configure your sensor and MQTT server in the configuration file
 
 3. To ensure the software is launched at startup :
 
