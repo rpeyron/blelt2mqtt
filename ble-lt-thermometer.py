@@ -81,26 +81,48 @@ MQTT functions
 def get_topic_state(device: Device) -> str:
     return config.MQTT_PREFIX + device.safe_name + "/state"
 
-def get_topic_discovery(device: Device) -> str:
-    return config.MQTT_DISCOVERY_PREFIX + "sensor/" + device.safe_name + "/config"
+def get_topic_discovery(device: Device, suffix: str = "t") -> str:
+    return config.MQTT_DISCOVERY_PREFIX + f"device/{device.safe_name}_{suffix}/config"
 
 def mqtt_send_discovery(device: Device):
     if config.MQTT_DISCOVERY and config.MQTT_ENABLE:
-        message =  {
-            "device_class": "temperature", 
-            "name": device.name ,
-            "uniq_id": device.uniq_id,
+        message = {
+            "device": {
+                "ids": device.safe_name,
+                "name": device.name,
+            },
+            "origin": {
+                "name": "blelt2mqtt",
+                "sw_version": "0.1.0.0",
+                "support_url": "https://github.com/rpeyron/blelt2mqtt"
+            },
+            "components": {
+                f"{device.safe_name.lower()}_temperature1": {
+                    "platform": "sensor",
+                    "device_class": "temperature",
+                    "unit_of_measurement": "°C",
+                    "value_template": "{{ value_json.temperature}}",
+                    "unique_id": device.safe_name + "_t",
+                },
+                f"{device.safe_name.lower()}_humidity1": {
+                    "platform": "sensor",
+                    "device_class": "humidity",
+                    "unit_of_measurement": "%",
+                    "value_template": "{{ value_json.humidity}}",
+                    "unique_id": device.safe_name + "_h",
+                }
+            },
             "state_topic": get_topic_state(device),
-            "value_template": "{{ value_json.temperature}}",
             "json_attributes_topic": get_topic_state(device),
-            "unit_of_measurement": "°C", 
-            "icon": "mdi:thermometer"
         }
-        mqtt_send_message(get_topic_discovery(device), message)
+
+        mqtt_send_message(get_topic_discovery(device, "t"), message)
+        mqtt_send_message(get_topic_discovery(device, "h"), message)
 
 def mqtt_remove_discovery(device: Device):
     if config.MQTT_DISCOVERY and config.MQTT_ENABLE:
-        mqtt_send_message(get_topic_discovery(device), "")
+        mqtt_send_message(get_topic_discovery(device, "t"), "")
+        mqtt_send_message(get_topic_discovery(device, "h"), "")
 
 
 def mqtt_send_message(topic: str, message) -> None:
