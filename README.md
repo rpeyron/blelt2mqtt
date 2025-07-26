@@ -1,8 +1,7 @@
 # blelt2mqtt : Bluetooth LE LT Thermometer 2 MQTT
 
 This software is a simple gateway to publish on MQTT for use with [Home Assistant](https://www.home-assistant.io/) or [Domoticz](https://www.domoticz.com/) temperature
-data from cheap bluetooth sensor LT Thermometer
-
+data from cheap bluetooth LT Thermometer sensors.
 
 ## Supported devices
 
