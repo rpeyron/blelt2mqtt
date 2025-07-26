@@ -15,20 +15,38 @@ These devices are supported by an android application named "qaqa" which is avai
 ## Install
 
 Prerequisites:
-* Linux, Windows or MacOS (only tested on Linux / Raspberry)
+* Linux, Windows or MacOS (only tested on Linux / Raspberry Pi and Windows 11)
 * Bluetooth LE compatible device (with installed stack)
 * Python3 with pip3
 
-Installation steps:
-1. Install needed Python modules (bleak, paho-mqtt)
+Installation steps:  
+1. **Optional**: Create a virtual environment (venv)  
+
+Debian users will need to install `python-venv` first if not installed! Python will warn you about that.
+
+First, create a virtual environment:
+
+```bash
+# Create the venv
+python3 -m venv .venv
+# Activate the venv
+source .venv/bin/activate
+```
+
+To be sure, let's first upgrade PIP in our fresh venv:
+```bash
+python3 -m pip install --upgrade pip
+```
+
+2. Install needed Python modules (bleak, paho-mqtt)
 
 ```
 pip3 install -r requirements.txt
 ```
 
-2. Configure your sensor anq MQTT server in the configuration file
+3. Configure your sensor and MQTT server in the configuration file
 
-3. To ensure the software is launched at startup :
+4. To ensure the software is launched at startup :
 
 ```
 crontab -e
@@ -105,6 +123,10 @@ The reverse-engineered protocol is described in [protocol.md](./protocol.md) and
 
 ## License & Credits
 
-GPL 
+[GPL-3.0 
+](LICENSE)
 
-2022 - Remi Peyronnet
+2022 - Remi Peyronnet  
+
+Contributions:  
+Maghiel Dijksman
