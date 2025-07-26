@@ -9,6 +9,7 @@ from bleak.exc import BleakDBusError
 import paho.mqtt.publish as publish
 
 import config
+import const
 
 # Install requirements :
 # pip3 install -r requirements.txt
@@ -92,7 +93,7 @@ def mqtt_send_discovery(device: Device):
             },
             "origin": {
                 "name": "blelt2mqtt",
-                "sw_version": "0.1.0.0",
+                "sw_version": const.BLELT2MQTT_VERSION,
                 "support_url": "https://github.com/rpeyron/blelt2mqtt"
             },
             "components": {
