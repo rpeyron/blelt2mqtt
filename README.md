@@ -1,15 +1,23 @@
 # blelt2mqtt : Bluetooth LE LT Thermometer 2 MQTT
 
-This software is a simple gateway to publish on MQTT for use with [Home Assistant](https://www.home-assistant.io/) or [Domoticz](https://www.domoticz.com/) temperature data from cheap bluetooth sensor LT Thermometer
-
+This software is a simple gateway to publish on MQTT for use with [Home Assistant](https://www.home-assistant.io/) or [Domoticz](https://www.domoticz.com/) temperature
+data from cheap bluetooth LT Thermometer sensors.
 
 ## Supported devices
 
-| Device | Photo | Where to find (examples) |
-| :-: |  :-: |  - | 
-| LT Thermometer v3 | ![LT Thermometer](docs/ble_lt_thermometer.jpg) | [AliExpress](https://fr.aliexpress.com/item/1005004073828412.html) |
+Currently, protocol versions 3 and 4 are supported. Other versions might be supported as well, as there seems to be
+little to no changes in between 3 and 4.
 
-These devices are supported by an android application named "qaqa" which is available here : https://d.ihunuo.com/app/dqwu (LT-Thermometer v3.apk)
+
+|                              Device                               | Protocol Version | Article # | Model # |                           Photo                            | Where to find (examples)                                         |
+|:-----------------------------------------------------------------:|------------------|-----------|---------|:----------------------------------------------------------:|------------------------------------------------------------------| 
+|                         LT Thermometer v3                         | V3               |           |         |       ![LT Thermometer](docs/ble_lt_thermometer.jpg)       | [AliExpress](https://fr.aliexpress.com/item/1005004073828412.html) |
+| Mebus Digitales Thermo- und Hygrometer mit drahtloser Übertragung | V4               | 11332     | ATN0148 | ![Mebus LT Thermometer](docs/mebus-ble_lt_thermometer.jpg) | Kaufland supermarkets<br/>[Mebus Group](https://www.mebus-group.de/en/produkt/11332-digitales-thermo-und-hygrometer/)
+
+
+These devices are supported by an android application named "qaqa" which is, among other place, available here:
+* https://d.ihunuo.com/app/dqwu (LT-Thermometer v3.apk)
+* https://play.google.com/store/apps/details?id=com.ihunuo.lt.thermometer (V4)
 
 
 ## Install
