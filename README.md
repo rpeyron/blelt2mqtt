@@ -11,8 +11,8 @@ little to no changes in between 3 and 4.
 
 |                              Device                               | Protocol Version | Article # | Model # |                           Photo                            | Where to find (examples)                                         |
 |:-----------------------------------------------------------------:|------------------|-----------|---------|:----------------------------------------------------------:|------------------------------------------------------------------| 
-|                         LT Thermometer v3                         | V3               |           |         |       ![LT Thermometer](docs/ble_lt_thermometer.jpg)       | [AliExpress](https://fr.aliexpress.com/item/1005004073828412.html) |
-| Mebus Digitales Thermo- und Hygrometer mit drahtloser Übertragung | V4               | 11332     | ATN0148 | ![Mebus LT Thermometer](docs/mebus-ble_lt_thermometer.jpg) | Kaufland supermarkets<br/>[Mebus Group](https://www.mebus-group.de/en/produkt/11332-digitales-thermo-und-hygrometer/)
+|                         LT Thermometer v3                         | V3               |           |         |       ![LT Thermometer](docs/assets/ble_lt_thermometer.jpg)       | [AliExpress](https://fr.aliexpress.com/item/1005004073828412.html) |
+| Mebus Digitales Thermo- und Hygrometer mit drahtloser Übertragung | V4               | 11332     | ATN0148 | ![Mebus LT Thermometer](docs/assets/mebus-ble_lt_thermometer.jpg) | Kaufland supermarkets<br/>[Mebus Group](https://www.mebus-group.de/en/produkt/11332-digitales-thermo-und-hygrometer/)
 
 
 These devices are supported by an android application named "qaqa" which is, among other place, available here:
@@ -74,7 +74,7 @@ If you want to have a domoticz sensor with temperature and humidity, you need to
 3. Add the idx in the configuration file as 'domoticz_idx'
 
 You should now see the sensor (native sensor on the left, auto-discovered on the right) :
-![Example of sensor in domoticz](./docs/domoticz.png)
+![Example of sensor in domoticz](docs/assets/domoticz.png)
 
 ### Home Assistant
 
