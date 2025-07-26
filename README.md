@@ -115,7 +115,7 @@ mqtt:
 
 ## Protocol
 
-The reverse-engineered protocol is described in [protocol.md](./protocol.md) and the process is described in this [article (in french)](https://www.lprp.fr/2022/07/capteur-bluetooth-le-temperature-dans-domoticz-par-reverse-engineering-et-mqtt-auto-discovery-domoticz-et-home-assistant/)
+The reverse-engineered protocol is described in [protocol.md](docs/protocol.md) and the process is described in this [article (in french)](https://www.lprp.fr/2022/07/capteur-bluetooth-le-temperature-dans-domoticz-par-reverse-engineering-et-mqtt-auto-discovery-domoticz-et-home-assistant/)
 
 
 ## Useful links
