@@ -6,8 +6,8 @@ data from cheap bluetooth sensor LT Thermometer
 
 ## Supported devices
 
-| Device | Photo | Where to find (examples) |
-| :-: |  :-: |  - | 
+|      Device       |                     Photo                      | Where to find (examples)                                           |
+|:-----------------:|:----------------------------------------------:|--------------------------------------------------------------------| 
 | LT Thermometer v3 | ![LT Thermometer](docs/ble_lt_thermometer.jpg) | [AliExpress](https://fr.aliexpress.com/item/1005004073828412.html) |
 
 These devices are supported by an android application named "qaqa" which is available here:
