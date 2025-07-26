@@ -21,13 +21,6 @@ service_uuid = "0000FFE5-0000-1000-8000-00805f9b34fb"
 notify_uuid = "0000FFE8-0000-1000-8000-00805f9b34fb"
 char_uuid = "00002902-0000-1000-8000-00805f9b34fb"
 
-# Dict of components the device has/reports with its abbreviation
-device_components = {
-    'temperature': 't',
-    'humidity': 'h',
-    'battery': 'b'
-}
-
 class Device:
     """
     Device class.
@@ -87,8 +80,8 @@ MQTT functions
 def get_topic_state(device: Device) -> str:
     return config.MQTT_PREFIX + device.safe_name + "/state"
 
-def get_topic_discovery(device: Device, suffix: str = "t") -> str:
-    return config.MQTT_DISCOVERY_PREFIX + f"device/{device.safe_name}_{suffix}/config"
+def get_topic_discovery(device: Device) -> str:
+    return config.MQTT_DISCOVERY_PREFIX + f"device/{device.safe_name}/config"
 
 def mqtt_send_discovery(device: Device):
     if config.MQTT_DISCOVERY and config.MQTT_ENABLE:
@@ -128,14 +121,11 @@ def mqtt_send_discovery(device: Device):
             "state_topic": get_topic_state(device),
         }
 
-        # Publish for every available component
-        for comp in device_components.values():
-            mqtt_send_message(get_topic_discovery(device, comp), message)
+        mqtt_send_message(get_topic_discovery(device), message)
 
 def mqtt_remove_discovery(device: Device):
     if config.MQTT_DISCOVERY and config.MQTT_ENABLE:
-        for comp in device_components.values():
-            mqtt_send_message(get_topic_discovery(device, comp), "")
+        mqtt_send_message(get_topic_discovery(device), "")
 
 
 def mqtt_send_message(topic: str, message) -> None:
@@ -201,7 +191,6 @@ def notification_handler(_: int, data: bytearray, device: Device):
         result = {
             "temperature": toSigned16(data[5:7]) / 10.0,
             "humidity": ((data[7] << 8) + data[8]) / 10.0,
-            "power": data[9] * 100,
             "battery": data[9] * 100,
             "unit": "Celsius" if data[10] == 0 else "Fahrenheit"
         }
