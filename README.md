@@ -15,8 +15,9 @@ little to no changes in between 3 and 4.
 | Mebus Digitales Thermo- und Hygrometer mit drahtloser Übertragung | V4               | 11332     | ATN0148 | ![Mebus LT Thermometer](docs/mebus-ble_lt_thermometer.jpg) | Kaufland supermarkets<br/>[Mebus Group](https://www.mebus-group.de/en/produkt/11332-digitales-thermo-und-hygrometer/)
 
 
-These devices are supported by an android application named "qaqa" which is available here:
-https://d.ihunuo.com/app/dqwu (LT-Thermometer v3.apk)
+These devices are supported by an android application named "qaqa" which is, among other place, available here:
+* https://d.ihunuo.com/app/dqwu (LT-Thermometer v3.apk)
+* https://play.google.com/store/apps/details?id=com.ihunuo.lt.thermometer (V4)
 
 
 ## Install
