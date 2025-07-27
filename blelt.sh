@@ -7,7 +7,5 @@ MY_PWD="$( dirname -- "$( readlink -f -- "$0"; )" )";
 
 while true; do
 sleep 30
-python3  $MY_PWD/ble-lt-thermometer.py 2>&1 > $MY_PWD/blelt.logs
+{ python3 "$MY_PWD/ble-lt-thermometer.py" > "$MY_PWD/blelt.logs"; } 2>&1
 done
-
-
