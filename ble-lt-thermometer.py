@@ -41,7 +41,7 @@ class Log:
         """
         if len(msg) <= 0:
             return
-        msg = ": " + msg
+        msg = f": {msg}"
 
         # Prepend device.name when given
         if device_name and len(device_name) > 0:
