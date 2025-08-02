@@ -172,7 +172,7 @@ def mqtt_send_message(topic: str, message) -> None:
                     port=config.MQTT_PORT,
                     auth={'username':config.MQTT_USERNAME, 'password':config.MQTT_PASSWORD}
                 )
-    print("Sent to MQTT", topic, ": ", message)
+    Log.msg(f"Sent to MQTT {topic}: {message}")
 
 
 def mqtt_send_state(message, device: Device) -> None:
@@ -203,19 +203,21 @@ def toSigned16(bytes):
 Bleak
 """
 def notification_handler(_: int, data: bytearray, device: Device):
-    print(f"[{device.name}] Received data")
+    Log.msg("Received data", device.name)
     dataSize = len(data)
     
     # Check message header
     if ( (dataSize > 6) and  (data[0] != 170) or (data[1] != 170) ):
-        print("Unknown data",', '.join('{:02x}'.format(x) for x in data))
+        msg = "Unknown data",', '.join('{:02x}'.format(x) for x in data)
+        Log.msg(msg)
         return
     
     # Check checksum
     payloadSize = (data[3] << 8) + data[4]
     checksum = sum(data[0:payloadSize+5]) % 256
     if checksum != data[dataSize-2]:
-        print("Checksum error:", checksum, data[dataSize-2], "data",', '.join('{:02x}'.format(x) for x in data))
+        msg = "Checksum error:", checksum, data[dataSize-2], "data",', '.join('{:02x}'.format(x) for x in data)
+        Log.msg(msg)
         return
         
     if ((data[2] == 162) and (dataSize > 10)):
@@ -225,7 +227,7 @@ def notification_handler(_: int, data: bytearray, device: Device):
             "battery": data[9] * 100,
             "unit": "Celsius" if data[10] == 0 else "Fahrenheit"
         }
-        print(result)
+        Log.msg(result)
         mqtt_send_state(result, device)
         if hasattr(device, "domoticz_idx") and device.domoticz_idx > 0:
             mqtt_send_domoticz(device.domoticz_idx, result)
@@ -233,35 +235,38 @@ def notification_handler(_: int, data: bytearray, device: Device):
         return
     
     if ((data[2] == 163)):
-        print("Hour data", ', '.join('{:02x}'.format(x) for x in data))
+        msg = "Hour data", ', '.join('{:02x}'.format(x) for x in data)
+        Log.msg(msg)
         return
     
     if ((data[2] == 164)):
-        print("Version Info", ''.join(chr(x) for x in data))
+        msg = "Version Info", ''.join(chr(x) for x in data)
+        Log.msg(msg)
         return
     
-    print("Other data", ', '.join('{:02x}'.format(x) for x in data))
+    msg = "Other data", ', '.join('{:02x}'.format(x) for x in data)
+    Log.msg(msg)
 
     #client.disconnect()
     
 async def deviceConnect(device: Device):
-    print(f'Scanning for device {device.name}')
+    Log.msg(f'Scanning for device {device.name}')
 
     if not device.mac:
-        print("Currently only by device address is supported")
+        Log.msg("Currently only by device address is supported")
         return
 
     try:
         ble_device = await BleakScanner.find_device_by_address(device.mac)
     except BleakDBusError as err:
-        print(f"[ERROR]: BleakDBusError: {err}")
+        Log.msg(f"[ERROR]: BleakDBusError: {err}")
         return
 
     if ble_device is None:
-        print(f"Could not find device with address {device.mac}")
+        Log.msg(f"Could not find device with address {device.mac}")
         return
 
-    print(f"[{device.name}] Device found, attempting connection")
+    Log.msg("Device found, attempting connection", device.name)
 
     # Set device name to blu name
     device.name = ble_device.name
@@ -269,14 +274,14 @@ async def deviceConnect(device: Device):
     disconnected_event = asyncio.Event()
 
     def disconnect_handler(client: BleakClient):
-        print("Disconnected from", device.name)
+        Log.msg("Disconnected", device.name)
         mqtt_remove_discovery(device)
         client.disconnect()
         disconnected_event.set()
 
     try:
         async with BleakClient(ble_device, disconnected_callback=disconnect_handler) as client:
-            print(f"[{device.name}] Connection successful")
+            Log.msg("Connection successful", device.name)
             mqtt_send_discovery(device)
 
             await client.start_notify(notify_uuid, partial(notification_handler, device=device))
@@ -286,13 +291,13 @@ async def deviceConnect(device: Device):
             try:
                 await disconnected_event.wait()
             except asyncio.exceptions.CancelledError:
-                print(f"[{device.name}] Cancelling connection, disconnecting")
+                Log.msg("Cancelling connection, disconnecting", device.name)
                 await client.disconnect()
     except AssertionError:
         return
 
 
-    print("Too many errors, stopping")
+    Log.msg("Too many errors, stopping")
     
 
 async def main(devicesCfg: list):
@@ -308,8 +313,8 @@ if __name__ == "__main__":
     try:
         asyncio.run(main(devices))
     except TimeoutError:
-        print("Connection failure: timeout")
+        Log.msg("Connection failure: timeout")
     except OSError:
-        print("Bluetooth interface not ready for use. Did you enable the if?")
+        Log.msg("Bluetooth interface not ready for use. Did you enable the if?")
     except KeyboardInterrupt:
-        print("Exit by user.")
+        Log.msg("Exit by user.")
