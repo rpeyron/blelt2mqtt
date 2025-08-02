@@ -41,13 +41,14 @@ class Log:
         """
         if len(msg) <= 0:
             return
+        msg = ": " + msg
 
         # Prepend device.name when given
         if device_name and len(device_name) > 0:
-            msg = f"[{device_name}]: {msg}"
+            msg = f" [{device_name}]{msg}"
 
         # Add timestamp to message
-        msg = f"{datetime.datetime.now()} {msg}"
+        msg = f"{datetime.datetime.now()}{msg}"
 
         # Just print message for now
         print(msg)
