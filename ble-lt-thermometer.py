@@ -1,4 +1,5 @@
 import asyncio
+import datetime
 from functools import partial
 from typing import Optional
 import json
@@ -21,6 +22,35 @@ import const
 service_uuid = "0000FFE5-0000-1000-8000-00805f9b34fb"
 notify_uuid = "0000FFE8-0000-1000-8000-00805f9b34fb"
 char_uuid = "00002902-0000-1000-8000-00805f9b34fb"
+
+class Log:
+    """
+    Simple logging class.
+    Basically just prints messages with timestamp prepended, but is a start on a more flexible approach
+    """
+    @staticmethod
+    def msg(msg, device_name: str = None):
+        """
+        Output a log message with prepended timestamp and device name.
+        Currently just prints the message.
+
+        :param msg:             Message to output
+        :param device_name:     Device name to prepend
+        :type device_name:      str
+        :return:
+        """
+        if len(msg) <= 0:
+            return
+
+        # Prepend device.name when given
+        if device_name and len(device_name) > 0:
+            msg = f"[{device_name}]: {msg}"
+
+        # Add timestamp to message
+        msg = f"{datetime.datetime.now()} {msg}"
+
+        # Just print message for now
+        print(msg)
 
 class Device:
     """
