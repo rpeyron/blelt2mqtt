@@ -261,7 +261,11 @@ async def deviceConnect(device: Device):
         try:
             ble_device = await BleakScanner.find_device_by_address(device.mac)
         except BleakDBusError as err:
-            Log.msg(f"[ERROR]: BleakDBusError: {err}")
+            if err.dbus_error == 'org.bluez.Error.InProgress':
+                Log.msg(f"Interface busy while trying to connect to {device.name}, retry in 10 seconds")
+            else:
+                Log.msg(f"[ERROR]: BleakDBusError: {err}")
+
             await asyncio.sleep(10)
             continue
 
