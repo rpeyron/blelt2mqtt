@@ -251,51 +251,53 @@ def notification_handler(_: int, data: bytearray, device: Device):
     #client.disconnect()
     
 async def deviceConnect(device: Device):
-    Log.msg(f'Scanning for device {device.name}')
+    while True:
+        Log.msg(f'Scanning for device {device.name}')
 
-    if not device.mac:
-        Log.msg("Currently only by device address is supported")
-        return
+        if not device.mac:
+            Log.msg("Currently only by device address is supported")
+            return False
 
-    try:
-        ble_device = await BleakScanner.find_device_by_address(device.mac)
-    except BleakDBusError as err:
-        Log.msg(f"[ERROR]: BleakDBusError: {err}")
-        return
+        try:
+            ble_device = await BleakScanner.find_device_by_address(device.mac)
+        except BleakDBusError as err:
+            Log.msg(f"[ERROR]: BleakDBusError: {err}")
+            await asyncio.sleep(10)
+            continue
 
-    if ble_device is None:
-        Log.msg(f"Could not find device with address {device.mac}")
-        return
+        if ble_device is None:
+            Log.msg(f"Could not find device with address {device.mac}")
+            return False
 
-    Log.msg("Device found, attempting connection", device.name)
+        Log.msg("Device found, attempting connection", device.name)
 
-    # Set device name to blu name
-    device.name = ble_device.name
+        # Set device name to blu name
+        device.name = ble_device.name
 
-    disconnected_event = asyncio.Event()
+        disconnected_event = asyncio.Event()
 
-    def disconnect_handler(client: BleakClient):
-        Log.msg("Disconnected", device.name)
-        mqtt_remove_discovery(device)
-        client.disconnect()
-        disconnected_event.set()
+        def disconnect_handler(client: BleakClient):
+            Log.msg("Disconnected", device.name)
+            mqtt_remove_discovery(device)
+            client.disconnect()
+            disconnected_event.set()
 
-    try:
-        async with BleakClient(ble_device, disconnected_callback=disconnect_handler) as client:
-            Log.msg("Connection successful", device.name)
-            mqtt_send_discovery(device)
+        try:
+            async with BleakClient(ble_device, disconnected_callback=disconnect_handler) as client:
+                Log.msg("Connection successful", device.name)
+                mqtt_send_discovery(device)
 
-            await client.start_notify(notify_uuid, partial(notification_handler, device=device))
-            await asyncio.sleep(device.wait)
-            await client.stop_notify(notify_uuid)
+                await client.start_notify(notify_uuid, partial(notification_handler, device=device))
+                await asyncio.sleep(device.wait)
+                await client.stop_notify(notify_uuid)
 
-            try:
-                await disconnected_event.wait()
-            except asyncio.exceptions.CancelledError:
-                Log.msg("Cancelling connection, disconnecting", device.name)
-                await client.disconnect()
-    except AssertionError:
-        return
+                try:
+                    await disconnected_event.wait()
+                except asyncio.exceptions.CancelledError:
+                    Log.msg("Cancelling connection, disconnecting", device.name)
+                    await client.disconnect()
+        except AssertionError:
+            return False
 
 
     Log.msg("Too many errors, stopping")
