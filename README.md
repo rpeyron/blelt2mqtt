@@ -87,7 +87,7 @@ sudo chown blelt2mqtt:blelt2mqtt /opt/blelt2mqtt
 Either download the latest release of blelt2mqtt in your preferred way or clone the git repository:
 ```bash
 cd /opt/blelt2mqtt
-git clone git@github.com:rpeyron/blelt2mqtt.git .
+git clone https://github.com/rpeyron/blelt2mqtt.git .
 ```
 
 #### 4. Setup venv and requirements
