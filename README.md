@@ -121,7 +121,7 @@ diverged from the given path by, for example, changing paths, please edit `blelt
 # Copy the service file
 sudo cp /opt/blelt2mqtt/blelt2mqtt.service /etc/systemd/system
 # Reload services
-sudo systemctl daemon-relad
+sudo systemctl daemon-reload
 # Start the blelt2mqtt service
 sudo systemctl start blelt2mqtt.service
 ```
