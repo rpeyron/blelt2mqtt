@@ -33,7 +33,7 @@ system user.
 
 ### Method 1: User daemon
 Installation steps:  
-1. **Optional**: Create a virtual environment (venv)  
+#### 1. **Optional**: Create a virtual environment (venv)  
 
 Debian users will need to install `python-venv` first if not installed! Python will warn you about that.
 
@@ -51,15 +51,15 @@ To be sure, let's first upgrade PIP in our fresh venv:
 python3 -m pip install --upgrade pip
 ```
 
-2. Install needed Python modules (bleak, paho-mqtt)
+#### 2. Install needed Python modules (bleak, paho-mqtt)
 
 ```
 pip3 install -r requirements.txt
 ```
 
-3. Configure your sensor and MQTT server in the configuration file
+#### 3. Configure your sensor and MQTT server in the configuration file
 
-4. To ensure the software is launched at startup :
+#### 4. To ensure the software is launched at startup :
 
 ```
 crontab -e
