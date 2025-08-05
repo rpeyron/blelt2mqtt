@@ -97,7 +97,7 @@ git clone https://github.com/rpeyron/blelt2mqtt.git .
 sudo -u blelt2mqtt -H -s
 # Create venv
 cd /opt/blelt2mqtt
-python -m venv .
+python -m venv .venv
 # Activate venv
 source .venv/bin/activate
 ```
