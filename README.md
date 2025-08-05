@@ -73,7 +73,7 @@ First, let's create a dedicated system user with a home directory. The home dire
 caching and log files.
 ```bash
 # Add dedicated system user and group with home (for caching etc)
-sudo useradd -rm blelt2mqtt`
+sudo useradd -rm blelt2mqtt
 ```
 
 #### 2. Create directory and set permissions
