@@ -29,16 +29,39 @@ class Log:
     Basically just prints messages with timestamp prepended, but is a start on a more flexible approach
     """
     @staticmethod
-    def msg(msg, device_name: str = None):
+    def getLogLevel(level: str) -> int:
+        """
+        Return log level as int as defined in constants file.
+
+        :param level:   Log level as string
+        :type level:    str
+        :return:
+        :rtype:         int
+        """
+        ll = const.LOG_LEVELS.get(level)
+        if not ll:
+            ll = const.LOG_LEVELS.get("INFO")
+
+        return ll
+
+    @staticmethod
+    def msg(msg, device_name: str = None, level: str = "INFO"):
         """
         Output a log message with prepended timestamp and device name.
         Currently just prints the message.
 
         :param msg:             Message to output
-        :param device_name:     Device name to prepend
+        :type msg:              Any
+        :param device_name:     Device name to prepend (optional)
         :type device_name:      str
+        :param level:           Log level of message, ERROR|WARNING|NOTICE|INFO|DEBUG, default: INFO (optional)
+        :type level:            str
         :return:
         """
+        # Do not log message if message level is greater than user-configured level
+        if Log.getLogLevel(level) > Log.getLogLevel(config.LOG_LEVEL):
+            return
+
         if len(msg) <= 0:
             return
         msg = f": {msg}"
@@ -48,7 +71,7 @@ class Log:
             msg = f" [{device_name}]{msg}"
 
         # Add timestamp to message
-        msg = f"{datetime.datetime.now()}{msg}"
+        msg = f"{datetime.datetime.now()} [{level}]{msg}"
 
         # Just print message for now
         print(msg)
@@ -62,7 +85,6 @@ class Device:
     custom_name: Optional[str] = ""
     _safe_name: str = ""
     mac: str = ""
-    wait: int = 30
     _uniq_id = ""
     domoticz_idx: Optional[int] = 0
 
@@ -210,7 +232,7 @@ def notification_handler(_: int, data: bytearray, device: Device):
     # Check message header
     if ( (dataSize > 6) and  (data[0] != 170) or (data[1] != 170) ):
         msg = "Unknown data",', '.join('{:02x}'.format(x) for x in data)
-        Log.msg(msg)
+        Log.msg(msg, level="ERROR")
         return
     
     # Check checksum
@@ -218,7 +240,7 @@ def notification_handler(_: int, data: bytearray, device: Device):
     checksum = sum(data[0:payloadSize+5]) % 256
     if checksum != data[dataSize-2]:
         msg = "Checksum error:", checksum, data[dataSize-2], "data",', '.join('{:02x}'.format(x) for x in data)
-        Log.msg(msg)
+        Log.msg(msg, level="ERROR")
         return
         
     if ((data[2] == 162) and (dataSize > 10)):
@@ -233,44 +255,41 @@ def notification_handler(_: int, data: bytearray, device: Device):
         if hasattr(device, "domoticz_idx") and device.domoticz_idx > 0:
             mqtt_send_domoticz(device.domoticz_idx, result)
 
-        return
-    
+    # Extra data
     if ((data[2] == 163)):
         msg = "Hour data", ', '.join('{:02x}'.format(x) for x in data)
-        Log.msg(msg)
-        return
+        Log.msg(msg, level="DEBUG")
     
     if ((data[2] == 164)):
         msg = "Version Info", ''.join(chr(x) for x in data)
-        Log.msg(msg)
-        return
+        Log.msg(msg, level="DEBUG")
     
     msg = "Other data", ', '.join('{:02x}'.format(x) for x in data)
-    Log.msg(msg)
+    Log.msg(msg, level="DEBUG")
 
-    #client.disconnect()
-    
+    return
+
 async def deviceConnect(device: Device):
     while True:
         Log.msg(f'Scanning for device {device.name}')
 
         if not device.mac:
-            Log.msg("Currently only by device address is supported")
+            Log.msg("Currently only by device address is supported", level="ERROR")
             return False
 
         try:
             ble_device = await BleakScanner.find_device_by_address(device.mac)
         except BleakDBusError as err:
             if err.dbus_error == 'org.bluez.Error.InProgress':
-                Log.msg(f"Interface busy while trying to connect to {device.name}, retry in 5 seconds")
+                Log.msg(f"Interface busy while trying to connect to {device.name}, retry in 5 seconds", level="WARNING")
             else:
-                Log.msg(f"[ERROR]: BleakDBusError: {err}")
+                Log.msg(f"[ERROR]: BleakDBusError: {err}", level="ERROR")
             await asyncio.sleep(5)
 
             continue
 
         if ble_device is None:
-            Log.msg(f"Could not find device with address {device.mac}")
+            Log.msg(f"Could not find device with address {device.mac}", level="NOTICE")
             return False
 
         Log.msg("Device found, attempting connection", device.name)
@@ -292,8 +311,7 @@ async def deviceConnect(device: Device):
                 mqtt_send_discovery(device)
 
                 await client.start_notify(notify_uuid, partial(notification_handler, device=device))
-                await asyncio.sleep(device.wait)
-                await client.stop_notify(notify_uuid)
+                await asyncio.sleep(10)
 
                 try:
                     await disconnected_event.wait()
@@ -304,7 +322,7 @@ async def deviceConnect(device: Device):
             return False
 
 
-    Log.msg("Too many errors, stopping")
+    Log.msg("Too many errors, stopping", level="ERROR")
     
 
 async def main(devicesCfg: list):
@@ -320,8 +338,8 @@ if __name__ == "__main__":
     try:
         asyncio.run(main(devices))
     except TimeoutError:
-        Log.msg("Connection failure: timeout")
+        Log.msg("Connection failure: timeout", level="ERROR")
     except OSError:
-        Log.msg("Bluetooth interface not ready for use. Did you enable the if?")
+        Log.msg("Bluetooth interface not ready for use. Did you enable the if?", level="WARNING")
     except KeyboardInterrupt:
         Log.msg("Exit by user.")

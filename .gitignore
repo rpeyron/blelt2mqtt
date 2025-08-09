@@ -4,3 +4,4 @@ __pycache__
 .idea
 config.py
 docs/TODO.md
+/scripts
