@@ -8,6 +8,11 @@ data from cheap bluetooth LT Thermometer sensors.
 Currently, protocol versions 3 and 4 are supported. Other versions might be supported as well, as there seems to be
 little to no changes in between 3 and 4.
 
+**Note for V3 users:**  
+It is very likely V3 users will experience a battery drain issue which seems to be fixed in V4 devices. This is the 
+main reason the workarounds in **blelt2mqtt** attempting to resolve this issue have been removed. Please feel 
+free to file an issue in case you are using a V3 device and experiencing the battery drain mentioned.
+
 
 |                              Device                               | Protocol Version | Article # | Model # |                           Photo                            | Where to find (examples)                                         |
 |:-----------------------------------------------------------------:|------------------|-----------|---------|:----------------------------------------------------------:|------------------------------------------------------------------| 
