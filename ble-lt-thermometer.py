@@ -312,8 +312,7 @@ async def deviceConnect(device: Device):
                 mqtt_send_discovery(device)
 
                 await client.start_notify(notify_uuid, partial(notification_handler, device=device))
-                await asyncio.sleep(device.wait)
-                await client.stop_notify(notify_uuid)
+                await asyncio.sleep(10)
 
                 try:
                     await disconnected_event.wait()
