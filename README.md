@@ -25,15 +25,20 @@ These devices are supported by an android application named "qaqa" which is, amo
 * https://play.google.com/store/apps/details?id=com.ihunuo.lt.thermometer (V4)
 
 
-## Install
+## Installation
 
 Prerequisites:
 * Linux, Windows or MacOS (only tested on Linux / Raspberry Pi and Windows 11)
 * Bluetooth LE compatible device (with installed stack)
 * Python3 with pip3
 
+**blelt2mqtt** can be installed and ran in multiple ways. Two of those methods ware explained below. The first being
+a simple daemon running as your current user. The second, preferred way, as a systemd service running as a dedicated
+system user.
+
+### Method 1: User daemon
 Installation steps:  
-1. **Optional**: Create a virtual environment (venv)  
+#### 1. **Optional**: Create a virtual environment (venv)  
 
 Debian users will need to install `python-venv` first if not installed! Python will warn you about that.
 
@@ -51,20 +56,84 @@ To be sure, let's first upgrade PIP in our fresh venv:
 python3 -m pip install --upgrade pip
 ```
 
-2. Install needed Python modules (bleak, paho-mqtt)
+#### 2. Install needed Python modules (bleak, paho-mqtt)
 
 ```
 pip3 install -r requirements.txt
 ```
 
-3. Configure your sensor and MQTT server in the configuration file
+#### 3. Configure your sensor and MQTT server in the configuration file
 
-4. To ensure the software is launched at startup :
+#### 4. To ensure the software is launched at startup :
 
 ```
 crontab -e
 
 @reboot bash /path/to/blelt.sh
+```
+
+### Method 2: System service
+#### 1. Create system user
+First, let's create a dedicated system user with a home directory. The home directory will be user for by example
+caching and log files.
+```bash
+# Add dedicated system user and group with home (for caching etc)
+sudo useradd -rm blelt2mqtt
+```
+
+#### 2. Create directory and set permissions
+```bash
+# Create directory and set permissions
+sudo mkdir /opt/blelt2mqtt
+sudo chown blelt2mqtt:blelt2mqtt /opt/blelt2mqtt
+```
+
+#### 3. Download blelt2mqtt
+Either download the latest release of blelt2mqtt in your preferred way or clone the git repository:
+```bash
+cd /opt/blelt2mqtt
+git clone https://github.com/rpeyron/blelt2mqtt.git .
+```
+
+#### 4. Setup venv and requirements
+##### 4.1 Switch to our dedicated user, create a venv and activate it
+```bash
+# Switch to dedicated user
+sudo -u blelt2mqtt -H -s
+# Create venv
+cd /opt/blelt2mqtt
+python -m venv .venv
+# Activate venv
+source .venv/bin/activate
+```
+##### 4.2 Upgrade pip
+```bash
+python -m pip install --upgrade pip
+```
+##### 4.3 Install requirements
+```bash
+pip install -r requirements.txt
+```
+
+#### 5. Configure blelt2mqtt
+Please take a moment to review and edit `config.py`. Your devices and (optional) MQTT broker setup is done here.
+
+#### 6. Install and start service
+An example, ready-to-use service file is bundled with blelt2mqtt and located in the installation directory. In case you 
+diverged from the given path by, for example, changing paths, please edit `blelt2mqtt.service` before continuing.
+
+```bash
+# Copy the service file
+sudo cp /opt/blelt2mqtt/blelt2mqtt.service /etc/systemd/system
+# Reload services
+sudo systemctl daemon-reload
+# Start the blelt2mqtt service
+sudo systemctl start blelt2mqtt.service
+```
+
+In case you want the service to always be enabled, for example after a reboot, simply enable the service:
+```bash
+sudo systemctl enable blelt2mqtt.service
 ```
 
 ## Configure Domoticz / Home Assistant
