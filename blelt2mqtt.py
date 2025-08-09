@@ -85,7 +85,6 @@ class Device:
     custom_name: Optional[str] = ""
     _safe_name: str = ""
     mac: str = ""
-    wait: int = 30
     _uniq_id = ""
     domoticz_idx: Optional[int] = 0
 
@@ -269,8 +268,7 @@ def notification_handler(_: int, data: bytearray, device: Device):
     Log.msg(msg, level="DEBUG")
 
     return
-    #client.disconnect()
-    
+
 async def deviceConnect(device: Device):
     while True:
         Log.msg(f'Scanning for device {device.name}')
@@ -313,8 +311,7 @@ async def deviceConnect(device: Device):
                 mqtt_send_discovery(device)
 
                 await client.start_notify(notify_uuid, partial(notification_handler, device=device))
-                await asyncio.sleep(device.wait)
-                await client.stop_notify(notify_uuid)
+                await asyncio.sleep(10)
 
                 try:
                     await disconnected_event.wait()
