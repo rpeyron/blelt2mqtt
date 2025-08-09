@@ -85,7 +85,6 @@ class Device:
     custom_name: Optional[str] = ""
     _safe_name: str = ""
     mac: str = ""
-    wait: int = 30
     _uniq_id = ""
     domoticz_idx: Optional[int] = 0
 
