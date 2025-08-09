@@ -269,8 +269,7 @@ def notification_handler(_: int, data: bytearray, device: Device):
     Log.msg(msg, level="DEBUG")
 
     return
-    #client.disconnect()
-    
+
 async def deviceConnect(device: Device):
     while True:
         Log.msg(f'Scanning for device {device.name}')
