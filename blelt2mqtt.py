@@ -277,7 +277,7 @@ def toSigned16(bytes):
 """
 Bleak
 """
-def notification_handler(_: int, data: bytearray, device: Device):
+def notification_handler(_: int, data: bytearray, device: Device, mqtt: MQTT):
     Log.msg("Received data", device.name)
     dataSize = len(data)
     
@@ -303,9 +303,9 @@ def notification_handler(_: int, data: bytearray, device: Device):
             "unit": "Celsius" if data[10] == 0 else "Fahrenheit"
         }
         Log.msg(result)
-        mqtt_send_state(result, device)
+        mqtt.send_state(result)
         if hasattr(device, "domoticz_idx") and device.domoticz_idx > 0:
-            mqtt_send_domoticz(device.domoticz_idx, result)
+            mqtt.send_domoticz(device.domoticz_idx, result)
 
     # Extra data
     if ((data[2] == 163)):
@@ -349,20 +349,24 @@ async def deviceConnect(device: Device):
         # Set device name to blu name
         device.name = ble_device.name
 
+        # Instantiate MQTT
+        # TODO: the MQTT class now requires Device in both its constructor as some methods, which is not DRY at all...
+        mqtt = MQTT(device)
+
         disconnected_event = asyncio.Event()
 
         def disconnect_handler(client: BleakClient):
             Log.msg("Disconnected", device.name)
-            mqtt_remove_discovery(device)
+            mqtt.remove_discovery()
             client.disconnect()
             disconnected_event.set()
 
         try:
             async with BleakClient(ble_device, disconnected_callback=disconnect_handler) as client:
                 Log.msg("Connection successful", device.name)
-                mqtt_send_discovery(device)
+                mqtt.send_discovery(device)
 
-                await client.start_notify(notify_uuid, partial(notification_handler, device=device))
+                await client.start_notify(notify_uuid, partial(notification_handler, device=device, mqtt=mqtt))
                 await asyncio.sleep(10)
 
                 try:
