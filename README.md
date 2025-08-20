@@ -32,7 +32,7 @@ Prerequisites:
 * Bluetooth LE compatible device (with installed stack)
 * Python3 with pip3
 
-**blelt2mqtt** can be installed and ran in multiple ways. Two of those methods ware explained below. The first being
+**blelt2mqtt** can be installed and ran in multiple ways. Two of those methods are explained below. The first being
 a simple daemon running as your current user. The second, preferred way, as a systemd service running as a dedicated
 system user.
 
