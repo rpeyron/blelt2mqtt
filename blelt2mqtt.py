@@ -128,93 +128,145 @@ class Device:
     def uniq_id(self, address: str):
         self._uniq_id = config.MQTT_PREFIX[:-1] + address.replace(":", "")
 
-"""
-MQTT functions
-"""
-def get_topic_state(device: Device) -> str:
-    return config.MQTT_PREFIX + device.safe_name + "/state"
+class MQTT:
+    """
+    Class MQTT
+    Wrapper for paho-mqtt.
 
-def get_topic_discovery(device: Device) -> str:
-    return config.MQTT_DISCOVERY_PREFIX + f"device/{device.safe_name}/config"
+    """
+    _topic_discovery: str = ""
+    _topic_state: str =  ""
 
-def mqtt_send_discovery(device: Device):
-    if config.MQTT_DISCOVERY and config.MQTT_ENABLE:
+    @property
+    def topic_discovery(self) -> str:
+        return self._topic_discovery
+
+    @topic_discovery.setter
+    def topic_discovery(self, device: Device):
+       self._topic_discovery = config.MQTT_DISCOVERY_PREFIX + f"device/{device.safe_name}/config"
+
+    @property
+    def topic_state(self) -> str:
+        return self._topic_state
+
+    @topic_state.setter
+    def topic_state(self, device: Device):
+        self._topic_state = config.MQTT_PREFIX + device.safe_name + "/state"
+
+    def __init__(self, device: Device):
+        self.topic_discovery = device
+        self.topic_state = device
+
+    def send_discovery(self, device: Device):
+        """
+        Send discovery message for device.
+
+        :param device:
+        :type device: Device
+        :return:
+        """
+        if config.MQTT_DISCOVERY and config.MQTT_ENABLE:
+            message = {
+                "device": {
+                    "ids": device.safe_name,
+                    "name": device.name,
+                },
+                "origin": {
+                    "name": "blelt2mqtt",
+                    "sw_version": const.BLELT2MQTT_VERSION,
+                    "support_url": "https://github.com/rpeyron/blelt2mqtt"
+                },
+                "components": {
+                    f"{device.safe_name.lower()}_temperature1": {
+                        "platform": "sensor",
+                        "device_class": "temperature",
+                        "unit_of_measurement": "°C",
+                        "value_template": "{{ value_json.temperature}}",
+                        "unique_id": device.safe_name + "_t",
+                    },
+                    f"{device.safe_name.lower()}_humidity1": {
+                        "platform": "sensor",
+                        "device_class": "humidity",
+                        "unit_of_measurement": "%",
+                        "value_template": "{{ value_json.humidity}}",
+                        "unique_id": device.safe_name + "_h",
+                    },
+                    f"{device.safe_name.lower()}_battery1": {
+                        "platform": "sensor",
+                        "device_class": "battery",
+                        "unit_of_measurement": "%",
+                        "value_template": "{{ value_json.battery}}",
+                        "unique_id": device.safe_name + "_b",
+                    },
+                },
+                "state_topic": self.topic_state,
+            }
+
+            self.send_message(self.topic_discovery, message)
+
+    def remove_discovery(self):
+        """
+        Remove discovery message
+
+        :return:
+        """
+        if config.MQTT_DISCOVERY and config.MQTT_ENABLE:
+            self.send_message(self.topic_discovery, "")
+
+    def send_message(self, topic: str, message) -> None:
+        """
+        Publish MQTT message to given topic.
+
+        :param topic:   Topic to publish to
+        :type topic:    str
+        :param message: Message to publish
+        :type message:  Any
+        :return:
+        """
+        if not config.MQTT_ENABLE:
+            return
+
+        message = json.dumps(message)
+        publish.single(
+                        topic,
+                        message,
+                        retain=True,
+                        hostname=config.MQTT_HOST,
+                        port=config.MQTT_PORT,
+                        auth={'username':config.MQTT_USERNAME, 'password':config.MQTT_PASSWORD}
+                    )
+        Log.msg(f"Sent to MQTT {topic}: {message}")
+
+    def send_state(self, message) -> None:
+        """
+        Publish message to state topic.
+
+        :param message:
+        :return:
+        """
+        if not config.MQTT_ENABLE:
+            return
+
+        self.send_message(self.topic_state, message)
+
+    def send_domoticz(self, domoticz_id, message) -> None:
+        """
+        Send message formatted for Domoticz
+
+        :param domoticz_id:
+        :param message:
+        :return:
+        """
+        if not config.MQTT_ENABLE:
+            return
+
+        topic = "domoticz/in"
         message = {
-            "device": {
-                "ids": device.safe_name,
-                "name": device.name,
-            },
-            "origin": {
-                "name": "blelt2mqtt",
-                "sw_version": const.BLELT2MQTT_VERSION,
-                "support_url": "https://github.com/rpeyron/blelt2mqtt"
-            },
-            "components": {
-                f"{device.safe_name.lower()}_temperature1": {
-                    "platform": "sensor",
-                    "device_class": "temperature",
-                    "unit_of_measurement": "°C",
-                    "value_template": "{{ value_json.temperature}}",
-                    "unique_id": device.safe_name + "_t",
-                },
-                f"{device.safe_name.lower()}_humidity1": {
-                    "platform": "sensor",
-                    "device_class": "humidity",
-                    "unit_of_measurement": "%",
-                    "value_template": "{{ value_json.humidity}}",
-                    "unique_id": device.safe_name + "_h",
-                },
-                f"{device.safe_name.lower()}_battery1": {
-                    "platform": "sensor",
-                    "device_class": "battery",
-                    "unit_of_measurement": "%",
-                    "value_template": "{{ value_json.battery}}",
-                    "unique_id": device.safe_name + "_b",
-                },
-            },
-            "state_topic": get_topic_state(device),
+            "command":"udevice",
+            "idx": domoticz_id,
+            "svalue": str(message['temperature']) + ";" + str(message['humidity']) + ";0"
         }
-
-        mqtt_send_message(get_topic_discovery(device), message)
-
-def mqtt_remove_discovery(device: Device):
-    if config.MQTT_DISCOVERY and config.MQTT_ENABLE:
-        mqtt_send_message(get_topic_discovery(device), "")
-
-
-def mqtt_send_message(topic: str, message) -> None:
-    if not config.MQTT_ENABLE:
-        return
-
-    message = json.dumps(message)
-    publish.single(
-                    topic,
-                    message,
-                    retain=True,
-                    hostname=config.MQTT_HOST,
-                    port=config.MQTT_PORT,
-                    auth={'username':config.MQTT_USERNAME, 'password':config.MQTT_PASSWORD}
-                )
-    Log.msg(f"Sent to MQTT {topic}: {message}")
-
-
-def mqtt_send_state(message, device: Device) -> None:
-    if not config.MQTT_ENABLE:
-        return
-
-    mqtt_send_message(get_topic_state(device), message)
-
-def mqtt_send_domoticz(domoticz_id, message) -> None:
-    if not config.MQTT_ENABLE:
-        return
-
-    topic = "domoticz/in"
-    message = {
-        "command":"udevice", 
-        "idx": domoticz_id, 
-        "svalue": str(message['temperature']) + ";" + str(message['humidity']) + ";0"
-    }
-    mqtt_send_message(topic, message)
+        self.send_message(topic, message)
 
 """
 General functions
