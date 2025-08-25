@@ -274,9 +274,6 @@ General functions
 def toSigned16(bytes):
     return (((bytes[0] << 8) + bytes[1]) ^ 0x8000) - 0x8000
 
-"""
-Bleak
-"""
 class Ble:
     """
     Class Ble.
