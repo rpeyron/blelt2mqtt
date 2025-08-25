@@ -271,8 +271,19 @@ class MQTT:
 """
 General functions
 """
-def toSigned16(bytes):
-    return (((bytes[0] << 8) + bytes[1]) ^ 0x8000) - 0x8000
+class Util:
+    """
+    Class Util.
+    Provides static utility methods.
+    """
+
+    @staticmethod
+    def toSigned16(bytes):
+        """
+        :param bytes:
+        :return:
+        """
+        return (((bytes[0] << 8) + bytes[1]) ^ 0x8000) - 0x8000
 
 class Ble:
     """
@@ -315,7 +326,7 @@ class Ble:
 
         if ((data[2] == 162) and (dataSize > 10)):
             result = {
-                "temperature": toSigned16(data[5:7]) / 10.0,
+                "temperature": Util.toSigned16(data[5:7]) / 10.0,
                 "humidity": ((data[7] << 8) + data[8]) / 10.0,
                 "battery": data[9] * 100,
                 "unit": "Celsius" if data[10] == 0 else "Fahrenheit"
