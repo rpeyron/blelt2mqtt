@@ -277,113 +277,123 @@ def toSigned16(bytes):
 """
 Bleak
 """
-def notification_handler(_: int, data: bytearray, device: Device, mqtt: MQTT):
-    Log.msg("Received data", device.name)
-    dataSize = len(data)
-    
-    # Check message header
-    if ( (dataSize > 6) and  (data[0] != 170) or (data[1] != 170) ):
-        msg = "Unknown data",', '.join('{:02x}'.format(x) for x in data)
-        Log.msg(msg, level="ERROR")
-        return
-    
-    # Check checksum
-    payloadSize = (data[3] << 8) + data[4]
-    checksum = sum(data[0:payloadSize+5]) % 256
-    if checksum != data[dataSize-2]:
-        msg = "Checksum error:", checksum, data[dataSize-2], "data",', '.join('{:02x}'.format(x) for x in data)
-        Log.msg(msg, level="ERROR")
-        return
-        
-    if ((data[2] == 162) and (dataSize > 10)):
-        result = {
-            "temperature": toSigned16(data[5:7]) / 10.0,
-            "humidity": ((data[7] << 8) + data[8]) / 10.0,
-            "battery": data[9] * 100,
-            "unit": "Celsius" if data[10] == 0 else "Fahrenheit"
-        }
-        Log.msg(result)
-        mqtt.send_state(result)
-        if hasattr(device, "domoticz_idx") and device.domoticz_idx > 0:
-            mqtt.send_domoticz(device.domoticz_idx, result)
+class Ble:
 
-    # Extra data
-    if ((data[2] == 163)):
-        msg = "Hour data", ', '.join('{:02x}'.format(x) for x in data)
+    @staticmethod
+    def notification_handler(_: int, data: bytearray, device: Device, mqtt: MQTT):
+        Log.msg("Received data", device.name)
+        dataSize = len(data)
+
+        # Check message header
+        if ( (dataSize > 6) and  (data[0] != 170) or (data[1] != 170) ):
+            msg = "Unknown data",', '.join('{:02x}'.format(x) for x in data)
+            Log.msg(msg, level="ERROR")
+            return
+
+        # Check checksum
+        payloadSize = (data[3] << 8) + data[4]
+        checksum = sum(data[0:payloadSize+5]) % 256
+        if checksum != data[dataSize-2]:
+            msg = "Checksum error:", checksum, data[dataSize-2], "data",', '.join('{:02x}'.format(x) for x in data)
+            Log.msg(msg, level="ERROR")
+            return
+
+        if ((data[2] == 162) and (dataSize > 10)):
+            result = {
+                "temperature": toSigned16(data[5:7]) / 10.0,
+                "humidity": ((data[7] << 8) + data[8]) / 10.0,
+                "battery": data[9] * 100,
+                "unit": "Celsius" if data[10] == 0 else "Fahrenheit"
+            }
+            Log.msg(result)
+            mqtt.send_state(result)
+            if hasattr(device, "domoticz_idx") and device.domoticz_idx > 0:
+                mqtt.send_domoticz(device.domoticz_idx, result)
+
+        # Extra data
+        if ((data[2] == 163)):
+            msg = "Hour data", ', '.join('{:02x}'.format(x) for x in data)
+            Log.msg(msg, level="DEBUG")
+
+        if ((data[2] == 164)):
+            msg = "Version Info", ''.join(chr(x) for x in data)
+            Log.msg(msg, level="DEBUG")
+
+        msg = "Other data", ', '.join('{:02x}'.format(x) for x in data)
         Log.msg(msg, level="DEBUG")
-    
-    if ((data[2] == 164)):
-        msg = "Version Info", ''.join(chr(x) for x in data)
-        Log.msg(msg, level="DEBUG")
-    
-    msg = "Other data", ', '.join('{:02x}'.format(x) for x in data)
-    Log.msg(msg, level="DEBUG")
 
-    return
+        return
 
-async def deviceConnect(device: Device):
-    while True:
-        Log.msg(f'Scanning for device {device.name}')
+    @staticmethod
+    async def device_connect(device: Device):
+        while True:
+            Log.msg(f'Scanning for device {device.name}')
 
-        if not device.mac:
-            Log.msg("Currently only by device address is supported", level="ERROR")
-            return False
+            if not device.mac:
+                Log.msg("Currently only by device address is supported", level="ERROR")
+                return False
 
-        try:
-            ble_device = await BleakScanner.find_device_by_address(device.mac)
-        except BleakDBusError as err:
-            if err.dbus_error == 'org.bluez.Error.InProgress':
-                Log.msg(f"Interface busy while trying to connect to {device.name}, retry in 5 seconds", level="WARNING")
-            else:
-                Log.msg(f"[ERROR]: BleakDBusError: {err}", level="ERROR")
-            await asyncio.sleep(5)
+            try:
+                ble_device = await BleakScanner.find_device_by_address(device.mac)
+            except BleakDBusError as err:
+                if err.dbus_error == 'org.bluez.Error.InProgress':
+                    Log.msg(
+                        f"Interface busy while trying to connect to {device.name}, retry in 5 seconds",
+                        level="WARNING"
+                    )
+                else:
+                    Log.msg(f"[ERROR]: BleakDBusError: {err}", level="ERROR")
+                await asyncio.sleep(5)
 
-            continue
+                continue
 
-        if ble_device is None:
-            Log.msg(f"Could not find device with address {device.mac}", level="NOTICE")
-            return False
+            if ble_device is None:
+                Log.msg(f"Could not find device with address {device.mac}", level="NOTICE")
+                return False
 
-        Log.msg("Device found, attempting connection", device.name)
+            Log.msg("Device found, attempting connection", device.name)
 
-        # Set device name to blu name
-        device.name = ble_device.name
+            # Set device name to blu name
+            device.name = ble_device.name
 
-        # Instantiate MQTT
-        # TODO: the MQTT class now requires Device in both its constructor as some methods, which is not DRY at all...
-        mqtt = MQTT(device)
+            # Instantiate MQTT
+            # TODO: the MQTT class now requires Device in both its constructor as some methods, which is not DRY at all...
+            mqtt = MQTT(device)
 
-        disconnected_event = asyncio.Event()
+            disconnected_event = asyncio.Event()
 
-        def disconnect_handler(client: BleakClient):
-            Log.msg("Disconnected", device.name)
-            mqtt.remove_discovery()
-            client.disconnect()
-            disconnected_event.set()
+            def disconnect_handler(client: BleakClient):
+                Log.msg("Disconnected", device.name)
+                mqtt.remove_discovery()
+                client.disconnect()
+                disconnected_event.set()
 
-        try:
-            async with BleakClient(ble_device, disconnected_callback=disconnect_handler) as client:
-                Log.msg("Connection successful", device.name)
-                mqtt.send_discovery(device)
+            try:
+                async with BleakClient(ble_device, disconnected_callback=disconnect_handler) as client:
+                    Log.msg("Connection successful", device.name)
+                    mqtt.send_discovery(device)
 
-                await client.start_notify(notify_uuid, partial(notification_handler, device=device, mqtt=mqtt))
-                await asyncio.sleep(10)
+                    await client.start_notify(
+                        notify_uuid,
+                        partial(Ble.notification_handler, device=device, mqtt=mqtt)
+                    )
+                    await asyncio.sleep(10)
 
-                try:
-                    await disconnected_event.wait()
-                except asyncio.exceptions.CancelledError:
-                    Log.msg("Cancelling connection, disconnecting", device.name)
-                    await client.disconnect()
-        except AssertionError:
-            return False
+                    try:
+                        await disconnected_event.wait()
+                    except asyncio.exceptions.CancelledError:
+                        Log.msg("Cancelling connection, disconnecting", device.name)
+                        await client.disconnect()
+            except AssertionError:
+                return False
 
 
-    Log.msg("Too many errors, stopping", level="ERROR")
+        Log.msg("Too many errors, stopping", level="ERROR")
     
 
 async def main(devicesCfg: list):
     lock = asyncio.Lock()
-    await asyncio.gather(*(deviceConnect(device) for device in devicesCfg))
+    await asyncio.gather(*(Ble.device_connect(device) for device in devicesCfg))
   
 if __name__ == "__main__":
     # Instantiate device objects from config
