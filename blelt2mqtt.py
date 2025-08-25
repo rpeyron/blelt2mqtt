@@ -278,9 +278,27 @@ def toSigned16(bytes):
 Bleak
 """
 class Ble:
+    """
+    Class Ble.
+    Acts as a bridge between bluetooth and MQTT.
+    Should be refactored and abstracted, but for now it works fine with its static methods.
+    """
 
     @staticmethod
-    def notification_handler(_: int, data: bytearray, device: Device, mqtt: MQTT):
+    def notification_handler(_: int, data: bytearray, device: Device, mqtt: MQTT) -> None:
+        """
+        Parses notification data and publishes it to the MQTT broker.
+
+        :param _:
+        :type _:        int
+        :param data:    Raw data
+        :type data:     bytearray
+        :param device:  Device instance
+        :type device:   Device
+        :param mqtt:    blelt2mqtt.MQTT class instance
+        :type mqtt:     MQTT
+        :return:
+        """
         Log.msg("Received data", device.name)
         dataSize = len(data)
 
@@ -325,7 +343,15 @@ class Ble:
         return
 
     @staticmethod
-    async def device_connect(device: Device):
+    async def device_connect(device: Device) -> bool | None:
+        """
+        Handles bluetooth connection to device and publishes discovery message to the MQTT broker.
+
+        :param device:  Device instance
+        :type device:   Device
+        :return:
+        :rtype:         bool | None
+        """
         while True:
             Log.msg(f'Scanning for device {device.name}')
 
