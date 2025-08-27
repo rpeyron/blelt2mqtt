@@ -23,11 +23,13 @@ service_uuid = "0000FFE5-0000-1000-8000-00805f9b34fb"
 notify_uuid = "0000FFE8-0000-1000-8000-00805f9b34fb"
 char_uuid = "00002902-0000-1000-8000-00805f9b34fb"
 
+
 class Log:
     """
     Simple logging class.
     Basically just prints messages with timestamp prepended, but is a start on a more flexible approach
     """
+
     @staticmethod
     def getLogLevel(level: str) -> int:
         """
@@ -76,11 +78,13 @@ class Log:
         # Just print message for now
         print(msg)
 
+
 class Device:
     """
     Device class.
     Acts as object holding device configuration
     """
+
     _name: str = ""
     custom_name: Optional[str] = ""
     _safe_name: str = ""
@@ -118,7 +122,7 @@ class Device:
 
     @safe_name.setter
     def safe_name(self, name: str):
-        self._safe_name = re.sub('[^a-zA-Z0-9_]', '', name)
+        self._safe_name = re.sub("[^a-zA-Z0-9_]", "", name)
 
     @property
     def uniq_id(self) -> str:
@@ -128,14 +132,16 @@ class Device:
     def uniq_id(self, address: str):
         self._uniq_id = config.MQTT_PREFIX[:-1] + address.replace(":", "")
 
+
 class MQTT:
     """
     Class MQTT
     Wrapper for paho-mqtt.
 
     """
+
     _topic_discovery: str = ""
-    _topic_state: str =  ""
+    _topic_state: str = ""
 
     @property
     def topic_discovery(self) -> str:
@@ -143,7 +149,7 @@ class MQTT:
 
     @topic_discovery.setter
     def topic_discovery(self, device: Device):
-       self._topic_discovery = config.MQTT_DISCOVERY_PREFIX + f"device/{device.safe_name}/config"
+        self._topic_discovery = config.MQTT_DISCOVERY_PREFIX + f"device/{device.safe_name}/config"
 
     @property
     def topic_state(self) -> str:
@@ -174,7 +180,7 @@ class MQTT:
                 "origin": {
                     "name": "blelt2mqtt",
                     "sw_version": const.BLELT2MQTT_VERSION,
-                    "support_url": "https://github.com/rpeyron/blelt2mqtt"
+                    "support_url": "https://github.com/rpeyron/blelt2mqtt",
                 },
                 "components": {
                     f"{device.safe_name.lower()}_temperature1": {
@@ -228,13 +234,16 @@ class MQTT:
 
         message = json.dumps(message)
         publish.single(
-                        topic,
-                        message,
-                        retain=True,
-                        hostname=config.MQTT_HOST,
-                        port=config.MQTT_PORT,
-                        auth={'username':config.MQTT_USERNAME, 'password':config.MQTT_PASSWORD}
-                    )
+            topic,
+            message,
+            retain=True,
+            hostname=config.MQTT_HOST,
+            port=config.MQTT_PORT,
+            auth={
+                "username": config.MQTT_USERNAME,
+                "password": config.MQTT_PASSWORD,
+            },
+        )
         Log.msg(f"Sent to MQTT {topic}: {message}")
 
     def send_state(self, message) -> None:
@@ -262,9 +271,9 @@ class MQTT:
 
         topic = "domoticz/in"
         message = {
-            "command":"udevice",
+            "command": "udevice",
             "idx": domoticz_id,
-            "svalue": str(message['temperature']) + ";" + str(message['humidity']) + ";0"
+            "svalue": str(message["temperature"]) + ";" + str(message["humidity"]) + ";0",
         }
         self.send_message(topic, message)
 
@@ -282,6 +291,7 @@ class Util:
         :return:
         """
         return (((bytes[0] << 8) + bytes[1]) ^ 0x8000) - 0x8000
+
 
 class Ble:
     """
@@ -309,25 +319,31 @@ class Ble:
         dataSize = len(data)
 
         # Check message header
-        if ( (dataSize > 6) and  (data[0] != 170) or (data[1] != 170) ):
-            msg = "Unknown data",', '.join('{:02x}'.format(x) for x in data)
+        if (dataSize > 6) and (data[0] != 170) or (data[1] != 170):
+            msg = "Unknown data", ", ".join("{:02x}".format(x) for x in data)
             Log.msg(msg, level="ERROR")
             return
 
         # Check checksum
         payloadSize = (data[3] << 8) + data[4]
-        checksum = sum(data[0:payloadSize+5]) % 256
-        if checksum != data[dataSize-2]:
-            msg = "Checksum error:", checksum, data[dataSize-2], "data",', '.join('{:02x}'.format(x) for x in data)
+        checksum = sum(data[0 : payloadSize + 5]) % 256
+        if checksum != data[dataSize - 2]:
+            msg = (
+                "Checksum error:",
+                checksum,
+                data[dataSize - 2],
+                "data",
+                ", ".join("{:02x}".format(x) for x in data),
+            )
             Log.msg(msg, level="ERROR")
             return
 
-        if ((data[2] == 162) and (dataSize > 10)):
+        if (data[2] == 162) and (dataSize > 10):
             result = {
                 "temperature": Util.toSigned16(data[5:7]) / 10.0,
                 "humidity": ((data[7] << 8) + data[8]) / 10.0,
                 "battery": data[9] * 100,
-                "unit": "Celsius" if data[10] == 0 else "Fahrenheit"
+                "unit": "Celsius" if data[10] == 0 else "Fahrenheit",
             }
             Log.msg(result)
             mqtt.send_state(result)
@@ -335,15 +351,15 @@ class Ble:
                 mqtt.send_domoticz(device.domoticz_idx, result)
 
         # Extra data
-        if ((data[2] == 163)):
-            msg = "Hour data", ', '.join('{:02x}'.format(x) for x in data)
+        if data[2] == 163:
+            msg = "Hour data", ", ".join("{:02x}".format(x) for x in data)
             Log.msg(msg, level="DEBUG")
 
-        if ((data[2] == 164)):
-            msg = "Version Info", ''.join(chr(x) for x in data)
+        if data[2] == 164:
+            msg = "Version Info", "".join(chr(x) for x in data)
             Log.msg(msg, level="DEBUG")
 
-        msg = "Other data", ', '.join('{:02x}'.format(x) for x in data)
+        msg = "Other data", ", ".join("{:02x}".format(x) for x in data)
         Log.msg(msg, level="DEBUG")
 
         return
@@ -359,19 +375,22 @@ class Ble:
         :rtype:         bool | None
         """
         while True:
-            Log.msg(f'Scanning for device {device.name}')
+            Log.msg(f"Scanning for device {device.name}")
 
             if not device.mac:
-                Log.msg("Currently only by device address is supported", level="ERROR")
+                Log.msg(
+                    "Currently only by device address is supported",
+                    level="ERROR",
+                )
                 return False
 
             try:
                 ble_device = await BleakScanner.find_device_by_address(device.mac)
             except BleakDBusError as err:
-                if err.dbus_error == 'org.bluez.Error.InProgress':
+                if err.dbus_error == "org.bluez.Error.InProgress":
                     Log.msg(
                         f"Interface busy while trying to connect to {device.name}, retry in 5 seconds",
-                        level="WARNING"
+                        level="WARNING",
                     )
                 else:
                     Log.msg(f"[ERROR]: BleakDBusError: {err}", level="ERROR")
@@ -380,7 +399,10 @@ class Ble:
                 continue
 
             if ble_device is None:
-                Log.msg(f"Could not find device with address {device.mac}", level="NOTICE")
+                Log.msg(
+                    f"Could not find device with address {device.mac}",
+                    level="NOTICE",
+                )
                 return False
 
             Log.msg("Device found, attempting connection", device.name)
@@ -407,7 +429,7 @@ class Ble:
 
                     await client.start_notify(
                         notify_uuid,
-                        partial(Ble.notification_handler, device=device, mqtt=mqtt)
+                        partial(Ble.notification_handler, device=device, mqtt=mqtt),
                     )
                     await asyncio.sleep(10)
 
@@ -419,14 +441,14 @@ class Ble:
             except AssertionError:
                 return False
 
-
         Log.msg("Too many errors, stopping", level="ERROR")
-    
+
 
 async def main(devicesCfg: list):
     lock = asyncio.Lock()
     await asyncio.gather(*(Ble.device_connect(device) for device in devicesCfg))
-  
+
+
 if __name__ == "__main__":
     # Instantiate device objects from config
     devices = []
@@ -438,6 +460,9 @@ if __name__ == "__main__":
     except TimeoutError:
         Log.msg("Connection failure: timeout", level="ERROR")
     except OSError:
-        Log.msg("Bluetooth interface not ready for use. Did you enable the if?", level="WARNING")
+        Log.msg(
+            "Bluetooth interface not ready for use. Did you enable the if?",
+            level="WARNING",
+        )
     except KeyboardInterrupt:
         Log.msg("Exit by user.")
