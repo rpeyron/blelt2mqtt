@@ -18,12 +18,6 @@ import const
 # Edit config in config.py
 
 
-# The UUID of LT Thermometer v3 & v4 protocol
-service_uuid = "0000FFE5-0000-1000-8000-00805f9b34fb"
-notify_uuid = "0000FFE8-0000-1000-8000-00805f9b34fb"
-char_uuid = "00002902-0000-1000-8000-00805f9b34fb"
-
-
 class Log:
     """
     Simple logging class.
@@ -428,7 +422,7 @@ class Ble:
                     mqtt.send_discovery(device)
 
                     await client.start_notify(
-                        notify_uuid,
+                        const.NOTIFY_UUID,
                         partial(Ble.notification_handler, device=device, mqtt=mqtt),
                     )
                     await asyncio.sleep(10)
