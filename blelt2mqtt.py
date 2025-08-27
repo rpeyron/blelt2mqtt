@@ -268,9 +268,7 @@ class MQTT:
         }
         self.send_message(topic, message)
 
-"""
-General functions
-"""
+
 class Util:
     """
     Class Util.
