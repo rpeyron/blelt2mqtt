@@ -63,6 +63,11 @@ pip3 install -r requirements.txt
 ```
 
 #### 3. Configure your sensor and MQTT server in the configuration file
+Please take a moment to review and set up the configuration. Your devices and (optional) MQTT broker setup is done here.
+
+**blelt2mqtt** comes with a default (example) configuration file `config-default.yaml`. Although you can edit this 
+file directly, it is recommended to copy it to `config.yaml` and make your changes there.
+**blelt2mqtt** will first look for `config.yaml` and, in case that fails, load `config-default.yaml` as a last resort.
 
 #### 4. To ensure the software is launched at startup :
 
@@ -116,7 +121,11 @@ pip install -r requirements.txt
 ```
 
 #### 5. Configure blelt2mqtt
-Please take a moment to review and edit `config.py`. Your devices and (optional) MQTT broker setup is done here.
+Please take a moment to review and set up the configuration. Your devices and (optional) MQTT broker setup is done here.
+
+**blelt2mqtt** comes with a default (example) configuration file `config-default.yaml`. Although you can edit this 
+file directly, it is recommended to copy it to `config.yaml` and make your changes there.
+**blelt2mqtt** will first look for `config.yaml` and, in case that fails, load `config-default.yaml` as a last resort.
 
 #### 6. Install and start service
 An example, ready-to-use service file is bundled with blelt2mqtt and located in the installation directory. In case you 
