@@ -3,9 +3,11 @@ import datetime
 from functools import partial
 from typing import Optional
 import json
-import os.path
+from os import path, chdir
+from pathlib import Path
 import re
 import yaml
+import sys
 
 from bleak import BleakScanner, BleakClient
 from bleak.exc import BleakDBusError
@@ -35,6 +37,10 @@ class Config:
         """
         Constructor, attempt loading config dictionary in self.cfg
         """
+        scriptPath = Path(path.dirname(__file__))  # Create Path instance for cwd (typically /root/demo)
+        chdir(scriptPath)  # Change wd to parent
+        sys.path.insert(0, str(scriptPath) + "/")  # Append trailing slash for cross-platform compatibility
+
         self.cfg = self.getConfigStream()
 
         pass
@@ -59,9 +65,9 @@ class Config:
         :raises:    FileNotFoundError
         """
         cfgIO = self.cfgDefaultFile
-        if os.path.isfile(self.cfgFile):
+        if path.isfile(self.cfgFile):
             cfgIO = self.cfgFile
-        elif not os.path.isfile(self.cfgDefaultFile):
+        elif not path.isfile(self.cfgDefaultFile):
             raise FileNotFoundError("Both default and custom configuration files not found.")
 
         with open(f"{cfgIO}") as ioStream:
