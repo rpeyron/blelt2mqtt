@@ -11,7 +11,6 @@ from bleak import BleakScanner, BleakClient
 from bleak.exc import BleakDBusError
 import paho.mqtt.publish as publish
 
-import config
 import const
 
 # Install requirements :
@@ -125,7 +124,7 @@ class Log:
         :return:
         """
         # Do not log message if message level is greater than user-configured level
-        if Log.getLogLevel(level) > Log.getLogLevel(config.LOG_LEVEL):
+        if Log.getLogLevel(level) > Log.getLogLevel(config.getValue("logging")["log_level"]):
             return
 
         if len(msg) <= 0:
@@ -194,7 +193,7 @@ class Device:
 
     @uniq_id.setter
     def uniq_id(self, address: str):
-        self._uniq_id = config.MQTT_PREFIX[:-1] + address.replace(":", "")
+        self._uniq_id = config.getValue("mqtt")["prefix"][:-1] + address.replace(":", "")
 
 
 class MQTT:
@@ -206,6 +205,7 @@ class MQTT:
 
     _topic_discovery: str = ""
     _topic_state: str = ""
+    _cfg: dict
 
     @property
     def topic_discovery(self) -> str:
@@ -213,7 +213,7 @@ class MQTT:
 
     @topic_discovery.setter
     def topic_discovery(self, device: Device):
-        self._topic_discovery = config.MQTT_DISCOVERY_PREFIX + f"device/{device.safe_name}/config"
+        self._topic_discovery = self._cfg["discovery_prefix"] + f"device/{device.safe_name}/config"
 
     @property
     def topic_state(self) -> str:
@@ -221,9 +221,10 @@ class MQTT:
 
     @topic_state.setter
     def topic_state(self, device: Device):
-        self._topic_state = config.MQTT_PREFIX + device.safe_name + "/state"
+        self._topic_state = self._cfg["prefix"] + device.safe_name + "/state"
 
     def __init__(self, device: Device):
+        self._cfg = config.getValue("mqtt")
         self.topic_discovery = device
         self.topic_state = device
 
@@ -235,7 +236,7 @@ class MQTT:
         :type device: Device
         :return:
         """
-        if config.MQTT_DISCOVERY and config.MQTT_ENABLE:
+        if self._cfg["discovery"] and self._cfg["enable"]:
             message = {
                 "device": {
                     "ids": device.safe_name,
@@ -280,7 +281,7 @@ class MQTT:
 
         :return:
         """
-        if config.MQTT_DISCOVERY and config.MQTT_ENABLE:
+        if self._cfg["discovery"] and self._cfg["enable"]:
             self.send_message(self.topic_discovery, "")
 
     def send_message(self, topic: str, message) -> None:
@@ -293,7 +294,7 @@ class MQTT:
         :type message:  Any
         :return:
         """
-        if not config.MQTT_ENABLE:
+        if not self._cfg["enable"]:
             return
 
         message = json.dumps(message)
@@ -301,11 +302,11 @@ class MQTT:
             topic,
             message,
             retain=True,
-            hostname=config.MQTT_HOST,
-            port=config.MQTT_PORT,
+            hostname=self._cfg["host"],
+            port=self._cfg["port"],
             auth={
-                "username": config.MQTT_USERNAME,
-                "password": config.MQTT_PASSWORD,
+                "username": self._cfg["username"],
+                "password": self._cfg["password"],
             },
         )
         Log.msg(f"Sent to MQTT {topic}: {message}")
@@ -317,7 +318,7 @@ class MQTT:
         :param message:
         :return:
         """
-        if not config.MQTT_ENABLE:
+        if not self._cfg['enable']:
             return
 
         self.send_message(self.topic_state, message)
@@ -330,7 +331,7 @@ class MQTT:
         :param message:
         :return:
         """
-        if not config.MQTT_ENABLE:
+        if not self._cfg['enable']:
             return
 
         topic = "domoticz/in"
@@ -514,9 +515,11 @@ async def main(devicesCfg: list):
 
 
 if __name__ == "__main__":
+    config = Config()
+
     # Instantiate device objects from config
     devices = []
-    for device_cfg in config.DEVICES:
+    for device_cfg in config.getValue("devices"):
         devices.append(Device(device_cfg))
 
     try:
