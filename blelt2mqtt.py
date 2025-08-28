@@ -62,9 +62,7 @@ class Config:
         if os.path.isfile(self.cfgFile):
             cfgIO = self.cfgFile
         elif not os.path.isfile(self.cfgDefaultFile):
-            raise FileNotFoundError(
-                "Both default and custom configuration files not found."
-            )
+            raise FileNotFoundError("Both default and custom configuration files not found.")
 
         with open(f"{cfgIO}") as ioStream:
             configStream = yaml.safe_load(ioStream)
@@ -318,7 +316,7 @@ class MQTT:
         :param message:
         :return:
         """
-        if not self._cfg['enable']:
+        if not self._cfg["enable"]:
             return
 
         self.send_message(self.topic_state, message)
@@ -331,7 +329,7 @@ class MQTT:
         :param message:
         :return:
         """
-        if not self._cfg['enable']:
+        if not self._cfg["enable"]:
             return
 
         topic = "domoticz/in"
