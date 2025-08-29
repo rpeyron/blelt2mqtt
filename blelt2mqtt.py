@@ -151,7 +151,16 @@ class Device:
     Device class.
     Acts as object holding device configuration
     """
+    # Device properties
+    manufacturer: str = ""
+    model: str = ""
+    model_id: Optional[str] = ""
+    hardware_version: str = ""
+    software_version: str = ""
+    suggested_area: str = ""
+    serial_number: Optional[str] = ""
 
+    # Component properties
     _name: str = ""
     custom_name: Optional[str] = ""
     _safe_name: str = ""
@@ -245,6 +254,13 @@ class MQTT:
                 "device": {
                     "ids": device.safe_name,
                     "name": device.name,
+                    "manufacturer": device.manufacturer,
+                    "model": device.model,
+                    "model_id": device.model_id,
+                    "hw_version": device.hardware_version,
+                    "sw_version": device.software_version,
+                    "suggested_area": device.suggested_area,
+                    "serial_number": device.serial_number,
                 },
                 "origin": {
                     "name": "blelt2mqtt",
@@ -521,9 +537,15 @@ async def main(devicesCfg: list):
 if __name__ == "__main__":
     config = Config()
 
+    # TODO: mapper :)
+    # Get default device properties
+    defaults = config.getValue("device_defaults")
     # Instantiate device objects from config
     devices = []
     for device_cfg in config.getValue("devices"):
+        for default in defaults.items():
+            device_cfg.setdefault(default[0], default[1])
+
         devices.append(Device(device_cfg))
 
     try:
