@@ -7,7 +7,7 @@ device_defaults:
     model: lt
     #model_id:
     hardware_version: v4
-    software_version: v0.2.0
+    software_version: blelt2mqtt v0.3.0
     suggested_area: living_room
     #serial_number:
 
