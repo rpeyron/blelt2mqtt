@@ -1,6 +1,18 @@
-# Device Settings
+# Devices
 #
+# Default device settings.
+# These defaults are used for all the configured devices below, and can be overridden on a per-device level.
+device_defaults:
+    manufacturer: blelt2mqtt
+    model: lt
+    #model_id:
+    hardware_version: v4
+    software_version: v0.2.0
+    suggested_area: living_room
+    #serial_number:
+
 # Configure your sensors below. Configuration is simply done by adding them to this list.
+# Any of the device_defaults attributes above can be used per device.
 #
 # mac:          (required) MAC Address of the bluetooth LT Thermometer
 # custom_name:  (optional) to override the name provided by bluetooth
