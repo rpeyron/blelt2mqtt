@@ -2,6 +2,6 @@ __pycache__
 *.local
 .venv
 .idea
-config.py
+config.yaml
 docs/TODO.md
 /scripts
